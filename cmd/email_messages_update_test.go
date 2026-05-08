@@ -1,15 +1,14 @@
 package cmd
 
 import (
+	"io"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
 )
 
 func TestRunEmailMessagesUpdate(t *testing.T) {
@@ -168,32 +167,8 @@ func TestEmailMessageFieldParamsFromCmd(t *testing.T) {
 	})
 }
 
-func TestResolveExpectedRevisionID(t *testing.T) {
-	t.Run("supplied value is returned without any HTTP call", func(t *testing.T) {
-		var called bool
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			called = true
-			w.WriteHeader(http.StatusInternalServerError)
-		}))
-		t.Cleanup(srv.Close)
-		keyring.MockInit()
-		t.Setenv("LOOPS_CONFIG_DIR", t.TempDir())
-		t.Setenv("LOOPS_API_KEY", "test-key")
-		t.Setenv("LOOPS_ENDPOINT_URL", srv.URL)
-
-		got, err := resolveExpectedRevisionID(cfg(t), "em_abc123", "rev_supplied")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if got != "rev_supplied" {
-			t.Errorf("got %q, want rev_supplied", got)
-		}
-		if called {
-			t.Error("expected no HTTP call when revision id supplied")
-		}
-	})
-
-	t.Run("empty supplied triggers GET and returns current contentRevisionId", func(t *testing.T) {
+func TestFetchLatestRevisionID(t *testing.T) {
+	t.Run("returns current contentRevisionId from GET", func(t *testing.T) {
 		body := `{
 			"success": true,
 			"emailMessageId": "em_abc123",
@@ -209,7 +184,7 @@ func TestResolveExpectedRevisionID(t *testing.T) {
 		}`
 		serveJSON(t, http.StatusOK, body)
 
-		got, err := resolveExpectedRevisionID(cfg(t), "em_abc123", "")
+		got, err := fetchLatestRevisionID(cfg(t), "em_abc123")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -221,9 +196,44 @@ func TestResolveExpectedRevisionID(t *testing.T) {
 	t.Run("GET failure surfaces a wrapped error", func(t *testing.T) {
 		serveJSON(t, http.StatusNotFound, `{"success":false,"message":"Email message not found"}`)
 
-		_, err := resolveExpectedRevisionID(cfg(t), "em_missing", "")
+		_, err := fetchLatestRevisionID(cfg(t), "em_missing")
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+	})
+}
+
+func TestEmailMessagesUpdateRevisionFlagValidation(t *testing.T) {
+	newCmd := func() *cobra.Command {
+		cmd := &cobra.Command{
+			Use:  "update <id>",
+			Args: cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error { return nil },
+		}
+		addEmailMessageFieldFlags(cmd)
+		cmd.Flags().StringP("expected-revision-id", "r", "", "")
+		cmd.Flags().BoolP("force", "f", false, "")
+		cmd.MarkFlagsMutuallyExclusive("expected-revision-id", "force")
+		cmd.MarkFlagsOneRequired("expected-revision-id", "force")
+		cmd.MarkFlagsOneRequired("subject", "preview-text", "from-name", "from-email", "reply-to", "lmx", "lmx-file")
+		cmd.SetOut(io.Discard)
+		cmd.SetErr(io.Discard)
+		return cmd
+	}
+
+	t.Run("neither flag errors", func(t *testing.T) {
+		cmd := newCmd()
+		cmd.SetArgs([]string{"em_abc123", "--subject", "x"})
+		if err := cmd.Execute(); err == nil {
+			t.Fatal("expected error when neither --expected-revision-id nor --force is set, got nil")
+		}
+	})
+
+	t.Run("both flags together errors", func(t *testing.T) {
+		cmd := newCmd()
+		cmd.SetArgs([]string{"em_abc123", "--subject", "x", "-r", "rev1", "-f"})
+		if err := cmd.Execute(); err == nil {
+			t.Fatal("expected error when both --expected-revision-id and --force are set, got nil")
 		}
 	})
 }

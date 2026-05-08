@@ -94,10 +94,7 @@ func runEmailMessagesUpdate(cfg *config.Config, id string, req loops.UpdateEmail
 	return newAPIClient(cfg).UpdateEmailMessage(id, req)
 }
 
-func resolveExpectedRevisionID(cfg *config.Config, id, supplied string) (string, error) {
-	if supplied != "" {
-		return supplied, nil
-	}
+func fetchLatestRevisionID(cfg *config.Config, id string) (string, error) {
 	msg, err := newAPIClient(cfg).GetEmailMessage(id)
 	if err != nil {
 		return "", fmt.Errorf("fetch current revision: %w", err)
@@ -144,16 +141,19 @@ var emailMessagesUpdateCmd = &cobra.Command{
 			return err
 		}
 
-		suppliedRevisionID, _ := cmd.Flags().GetString("expected-revision-id")
+		revisionID, _ := cmd.Flags().GetString("expected-revision-id")
+		force, _ := cmd.Flags().GetBool("force")
 
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		expectedRevisionID, err := resolveExpectedRevisionID(cfg, args[0], suppliedRevisionID)
-		if err != nil {
-			return err
+		if force {
+			revisionID, err = fetchLatestRevisionID(cfg, args[0])
+			if err != nil {
+				return err
+			}
 		}
 
 		req := loops.UpdateEmailMessageRequest{
@@ -166,7 +166,7 @@ var emailMessagesUpdateCmd = &cobra.Command{
 				LMX:          params.LMX,
 			},
 			Set:                params.Set,
-			ExpectedRevisionID: expectedRevisionID,
+			ExpectedRevisionID: revisionID,
 		}
 
 		msg, err := runEmailMessagesUpdate(cfg, args[0], req)
@@ -260,7 +260,10 @@ func init() {
 	emailMessagesCmd.AddCommand(emailMessagesGetCmd)
 
 	addEmailMessageFieldFlags(emailMessagesUpdateCmd)
-	emailMessagesUpdateCmd.Flags().StringP("expected-revision-id", "r", "", "Last-seen contentRevisionId. If omitted, the CLI fetches the current revision before posting.")
+	emailMessagesUpdateCmd.Flags().StringP("expected-revision-id", "r", "", "Last-seen contentRevisionId. Get this from a prior 'email-messages get'. Mutually exclusive with --force.")
+	emailMessagesUpdateCmd.Flags().BoolP("force", "f", false, "Fetch the current revision and use it (overwrites any concurrent edits). Mutually exclusive with --expected-revision-id.")
+	emailMessagesUpdateCmd.MarkFlagsMutuallyExclusive("expected-revision-id", "force")
+	emailMessagesUpdateCmd.MarkFlagsOneRequired("expected-revision-id", "force")
 	emailMessagesUpdateCmd.MarkFlagsOneRequired("subject", "preview-text", "from-name", "from-email", "reply-to", "lmx", "lmx-file")
 	emailMessagesCmd.AddCommand(emailMessagesUpdateCmd)
 
