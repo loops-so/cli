@@ -28,9 +28,8 @@ func runThemesList(cfg *config.Config, params loops.PaginationParams) ([]loops.T
 }
 
 var themesCmd = &cobra.Command{
-	Use:    "themes",
-	Short:  "Manage themes",
-	Hidden: true,
+	Use:   "themes",
+	Short: "Manage themes",
 }
 
 var themesListCmd = &cobra.Command{

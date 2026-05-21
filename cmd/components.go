@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
@@ -27,9 +27,8 @@ func runComponentsList(cfg *config.Config, params loops.PaginationParams) ([]loo
 }
 
 var componentsCmd = &cobra.Command{
-	Use:    "components",
-	Short:  "Manage components",
-	Hidden: true,
+	Use:   "components",
+	Short: "Manage components",
 }
 
 var componentsListCmd = &cobra.Command{
