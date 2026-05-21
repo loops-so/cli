@@ -143,13 +143,16 @@ func TestExtractFlagGroups_AllAnnotationKeys(t *testing.T) {
 }
 
 func TestBuildAgentContext_HiddenCommands(t *testing.T) {
-	ctx := buildAgentContext(rootCmd)
-	spam := findAgentCommand(ctx.Commands, "campaigns")
-	if spam == nil {
-		t.Fatal("campaigns not found in output (hidden commands should still be included)")
+	root := &cobra.Command{Use: "root"}
+	root.AddCommand(&cobra.Command{Use: "secret", Hidden: true})
+
+	ctx := buildAgentContext(root)
+	secret := findAgentCommand(ctx.Commands, "secret")
+	if secret == nil {
+		t.Fatal("secret not found in output (hidden commands should still be included)")
 	}
-	if !spam.Hidden {
-		t.Error("campaigns should be hidden=true")
+	if !secret.Hidden {
+		t.Error("secret should be hidden=true")
 	}
 }
 
