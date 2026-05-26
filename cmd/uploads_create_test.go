@@ -82,7 +82,7 @@ func TestRunUploadsCreate(t *testing.T) {
 		state := serveUpload(t)
 		path := writeTempPNG(t)
 
-		result, err := runUploadsCreate(cfg(t), path, "em_abc123", "")
+		result, err := runUploadsCreate(cfg(t), path, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -94,9 +94,6 @@ func TestRunUploadsCreate(t *testing.T) {
 			t.Errorf("FinalURL = %q", result.FinalURL)
 		}
 
-		if state.createReq["emailMessageId"] != "em_abc123" {
-			t.Errorf("create emailMessageId = %v, want em_abc123", state.createReq["emailMessageId"])
-		}
 		if state.createReq["contentType"] != "image/png" {
 			t.Errorf("create contentType = %v, want image/png (sniffed)", state.createReq["contentType"])
 		}
@@ -126,7 +123,7 @@ func TestRunUploadsCreate(t *testing.T) {
 		state := serveUpload(t)
 		path := writeTempPNG(t)
 
-		if _, err := runUploadsCreate(cfg(t), path, "em_abc123", "application/octet-stream"); err != nil {
+		if _, err := runUploadsCreate(cfg(t), path, "application/octet-stream"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -140,14 +137,14 @@ func TestRunUploadsCreate(t *testing.T) {
 
 	t.Run("missing file returns error", func(t *testing.T) {
 		serveUpload(t)
-		if _, err := runUploadsCreate(cfg(t), "/does/not/exist.png", "em_abc123", ""); err == nil {
+		if _, err := runUploadsCreate(cfg(t), "/does/not/exist.png", ""); err == nil {
 			t.Fatal("expected error for missing file, got nil")
 		}
 	})
 
 	t.Run("directory path returns error", func(t *testing.T) {
 		serveUpload(t)
-		if _, err := runUploadsCreate(cfg(t), t.TempDir(), "em_abc123", ""); err == nil {
+		if _, err := runUploadsCreate(cfg(t), t.TempDir(), ""); err == nil {
 			t.Fatal("expected error for directory path, got nil")
 		}
 	})
@@ -157,13 +154,13 @@ func TestRunUploadsCreate(t *testing.T) {
 		t.Setenv("LOOPS_CONFIG_DIR", t.TempDir())
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"success":false,"message":"missing emailMessageId"}`))
+			w.Write([]byte(`{"success":false,"message":"bad request"}`))
 		}))
 		t.Cleanup(srv.Close)
 		t.Setenv("LOOPS_API_KEY", "test-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", srv.URL)
 
-		if _, err := runUploadsCreate(cfg(t), writeTempPNG(t), "", ""); err == nil {
+		if _, err := runUploadsCreate(cfg(t), writeTempPNG(t), ""); err == nil {
 			t.Fatal("expected error, got nil")
 		}
 	})

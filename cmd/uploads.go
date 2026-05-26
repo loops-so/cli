@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func runUploadsCreate(cfg *config.Config, path, emailMessageID, contentType string) (*loops.CompleteUploadResponse, error) {
+func runUploadsCreate(cfg *config.Config, path, contentType string) (*loops.CompleteUploadResponse, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("open %q: %w", path, err)
@@ -38,10 +38,9 @@ func runUploadsCreate(cfg *config.Config, path, emailMessageID, contentType stri
 	}
 
 	return newAPIClient(cfg).Upload(loops.UploadRequest{
-		EmailMessageID: emailMessageID,
-		ContentType:    contentType,
-		ContentLength:  info.Size(),
-		Body:           f,
+		ContentType:   contentType,
+		ContentLength: info.Size(),
+		Body:          f,
 	})
 }
 
@@ -55,7 +54,6 @@ var uploadsCreateCmd = &cobra.Command{
 	Short: "Upload a file as an email asset",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		emailMessageID, _ := cmd.Flags().GetString("email-message-id")
 		contentType, _ := cmd.Flags().GetString("content-type")
 
 		cfg, err := loadConfig()
@@ -63,7 +61,7 @@ var uploadsCreateCmd = &cobra.Command{
 			return err
 		}
 
-		result, err := runUploadsCreate(cfg, args[0], emailMessageID, contentType)
+		result, err := runUploadsCreate(cfg, args[0], contentType)
 		if err != nil {
 			return err
 		}
@@ -80,9 +78,7 @@ var uploadsCreateCmd = &cobra.Command{
 }
 
 func init() {
-	uploadsCreateCmd.Flags().StringP("email-message-id", "m", "", "Email message this asset belongs to (required)")
 	uploadsCreateCmd.Flags().String("content-type", "", "MIME type to use for the upload (default: sniffed from file contents)")
-	_ = uploadsCreateCmd.MarkFlagRequired("email-message-id")
 
 	uploadsCmd.AddCommand(uploadsCreateCmd)
 	rootCmd.AddCommand(uploadsCmd)
