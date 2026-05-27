@@ -12,6 +12,7 @@ func TestSkillInstallArgs(t *testing.T) {
 		name   string
 		global bool
 		yes    bool
+		all    bool
 		want   []string
 	}{
 		{
@@ -34,10 +35,27 @@ func TestSkillInstallArgs(t *testing.T) {
 			yes:    true,
 			want:   []string{"--yes", "skills", "add", "https://github.com/loops-so/skills", "--skill", "loops-cli", "--global", "--yes"},
 		},
+		{
+			name: "all",
+			all:  true,
+			want: []string{"--yes", "skills", "add", "https://github.com/loops-so/skills", "--all"},
+		},
+		{
+			name:   "all and global",
+			all:    true,
+			global: true,
+			want:   []string{"--yes", "skills", "add", "https://github.com/loops-so/skills", "--all", "--global"},
+		},
+		{
+			name: "all and yes",
+			all:  true,
+			yes:  true,
+			want: []string{"--yes", "skills", "add", "https://github.com/loops-so/skills", "--all"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := skillInstallArgs(tc.global, tc.yes)
+			got := skillInstallArgs(tc.global, tc.yes, tc.all)
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("got %v, want %v", got, tc.want)
 			}
@@ -48,7 +66,7 @@ func TestSkillInstallArgs(t *testing.T) {
 func TestRunSkillInstallErrorsWhenNpxMissing(t *testing.T) {
 	t.Setenv("PATH", "")
 	var buf bytes.Buffer
-	err := runSkillInstall(&buf, false, false)
+	err := runSkillInstall(&buf, false, false, false)
 	if err == nil {
 		t.Fatal("expected error when npx is missing, got nil")
 	}
