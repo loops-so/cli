@@ -26,13 +26,13 @@ func TestSkillInstallArgs(t *testing.T) {
 		{
 			name: "yes",
 			yes:  true,
-			want: []string{"skills", "add", "https://github.com/loops-so/skills", "--skill", "loops-cli", "--yes"},
+			want: []string{"--yes", "skills", "add", "https://github.com/loops-so/skills", "--skill", "loops-cli", "--yes"},
 		},
 		{
 			name:   "global and yes",
 			global: true,
 			yes:    true,
-			want:   []string{"skills", "add", "https://github.com/loops-so/skills", "--skill", "loops-cli", "--global", "--yes"},
+			want:   []string{"--yes", "skills", "add", "https://github.com/loops-so/skills", "--skill", "loops-cli", "--global", "--yes"},
 		},
 	}
 	for _, tc := range tests {

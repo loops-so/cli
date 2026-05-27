@@ -21,10 +21,16 @@ var (
 )
 
 func skillInstallArgs(global, yes bool) []string {
-	args := []string{"skills", "add", skillsRepoURL, "--skill", skillName}
+	args := []string{}
+	// --yes for npx
+	if yes {
+		args = append(args, "--yes")
+	}
+	args = append(args, "skills", "add", skillsRepoURL, "--skill", skillName)
 	if global {
 		args = append(args, "--global")
 	}
+	// --yes for skills
 	if yes {
 		args = append(args, "--yes")
 	}
@@ -51,7 +57,7 @@ func runSkillInstall(stderr io.Writer, global, yes bool) error {
 
 var skillInstallCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install the Loops CLI skill via npx",
+	Short: "Install the Loops CLI skill via 'skills add'",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := runSkillInstall(os.Stderr, skillInstallGlobal, skillInstallYes); err != nil {
 			return err
