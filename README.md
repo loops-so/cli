@@ -43,6 +43,22 @@ irm https://raw.githubusercontent.com/Loops-so/cli/main/install.ps1 | iex
 go install github.com/loops-so/cli/cmd/loops@latest
 ```
 
+## Local development
+
+Build the local CLI into `dist/loops`, then put that directory first on `PATH`
+so local smoke tests use the same command shape as production:
+
+```bash
+task build
+export PATH="$PWD/dist:$PATH"
+export LOOPS_ENDPOINT_URL=http://localhost:3000/api/v1
+loops --output json api-key
+loops --output json campaigns create --name "Local API demo"
+loops --output json workflows list
+loops --output json workflows get <workflow_id>
+loops --output json transactional list
+```
+
 ## Auth
 
 The CLI requires a Loops API key. Get one from [Settings > API](https://app.loops.so/settings?page=api).
@@ -69,4 +85,5 @@ When multiple keys are available, the CLI resolves them in this order:
 | Variable | Description |
 | --- | --- |
 | `LOOPS_API_KEY` | API key to use directly — useful for CI or when keyring storage isn't available. |
+| `LOOPS_ENDPOINT_URL` | API base URL. Defaults to `https://app.loops.so/api/v1`; set this to a local server for development. |
 | `NO_COLOR` | Set to `1` to disable color output. `0` or unset leaves color on. |

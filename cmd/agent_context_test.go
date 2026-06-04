@@ -146,14 +146,24 @@ func TestExtractFlagGroups_AllAnnotationKeys(t *testing.T) {
 	}
 }
 
-func TestBuildAgentContext_HiddenCommands(t *testing.T) {
+func TestBuildAgentContext_FiltersInternalCommands(t *testing.T) {
 	ctx := buildAgentContext(rootCmd)
-	spam := findAgentCommand(ctx.Commands, "campaigns")
-	if spam == nil {
-		t.Fatal("campaigns not found in output (hidden commands should still be included)")
+	spam := findAgentCommand(ctx.Commands, "spam")
+	if spam != nil {
+		t.Fatal("spam should not be included in agent context output")
 	}
-	if !spam.Hidden {
-		t.Error("campaigns should be hidden=true")
+}
+
+func TestBuildAgentContext_ContentCommandsVisible(t *testing.T) {
+	ctx := buildAgentContext(rootCmd)
+	for _, name := range []string{"campaigns", "email-messages", "workflows"} {
+		cmd := findAgentCommand(ctx.Commands, name)
+		if cmd == nil {
+			t.Fatalf("%s not found in output", name)
+		}
+		if cmd.Hidden {
+			t.Errorf("%s should be hidden=false", name)
+		}
 	}
 }
 

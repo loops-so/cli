@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
@@ -27,9 +27,8 @@ func runCampaignsList(cfg *config.Config, params loops.PaginationParams) ([]loop
 }
 
 var campaignsCmd = &cobra.Command{
-	Use:    "campaigns",
-	Short:  "Manage campaigns",
-	Hidden: true,
+	Use:   "campaigns",
+	Short: "Manage campaigns",
 }
 
 var campaignsListCmd = &cobra.Command{

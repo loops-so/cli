@@ -159,9 +159,8 @@ func runWorkflowsList(cfg *config.Config, params loops.PaginationParams) ([]Work
 }
 
 var workflowsCmd = &cobra.Command{
-	Use:    "workflows",
-	Short:  "Manage workflows",
-	Hidden: true,
+	Use:   "workflows",
+	Short: "Manage workflows",
 }
 
 var workflowsListCmd = &cobra.Command{

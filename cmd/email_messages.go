@@ -11,8 +11,8 @@ import (
 	"github.com/alecthomas/chroma/v2/formatters"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
@@ -103,9 +103,8 @@ func fetchLatestRevisionID(cfg *config.Config, id string) (string, error) {
 }
 
 var emailMessagesCmd = &cobra.Command{
-	Use:    "email-messages",
-	Short:  "Manage email messages",
-	Hidden: true,
+	Use:   "email-messages",
+	Short: "Manage email messages",
 }
 
 var emailMessagesGetCmd = &cobra.Command{
