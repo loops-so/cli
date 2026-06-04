@@ -19,6 +19,10 @@ type WorkflowListItem struct {
 	UpdatedAt string `json:"updatedAt"`
 }
 
+type WorkflowCreateResponse struct {
+	ID string `json:"id"`
+}
+
 type WorkflowEmailMessage struct {
 	ID                string   `json:"id"`
 	EmailMessageID    string   `json:"emailMessageId"`
@@ -146,6 +150,32 @@ func runWorkflowsGet(cfg *config.Config, id string) (*WorkflowDetail, error) {
 	return &workflow, nil
 }
 
+func runWorkflowsCreate(cfg *config.Config) (*WorkflowCreateResponse, error) {
+	req, err := http.NewRequest(http.MethodPost, workflowURL(cfg, "/workflows", loops.PaginationParams{}), strings.NewReader("{}"))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "loops-cli/"+version)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, workflowErrorFromResponse(resp)
+	}
+
+	var created WorkflowCreateResponse
+	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+	return &created, nil
+}
+
 func runWorkflowsList(cfg *config.Config, params loops.PaginationParams) ([]WorkflowListItem, error) {
 	if params.Cursor != "" {
 		workflows, _, err := runWorkflowsListPage(cfg, params)
@@ -162,6 +192,30 @@ func runWorkflowsList(cfg *config.Config, params loops.PaginationParams) ([]Work
 var workflowsCmd = &cobra.Command{
 	Use:   "workflows",
 	Short: "Manage workflows",
+}
+
+var workflowsCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a blank workflow",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		created, err := runWorkflowsCreate(cfg)
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), created)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Created. (workflowId: %s)\n", created.ID)
+		return nil
+	},
 }
 
 var workflowsListCmd = &cobra.Command{
@@ -290,6 +344,7 @@ func workflowEmailMessageRows(workflow *WorkflowDetail) [][]string {
 func init() {
 	addPaginationFlags(workflowsListCmd)
 	addPickFlag(workflowsListCmd)
+	workflowsCmd.AddCommand(workflowsCreateCmd)
 	workflowsCmd.AddCommand(workflowsListCmd)
 	workflowsCmd.AddCommand(workflowsGetCmd)
 	rootCmd.AddCommand(workflowsCmd)

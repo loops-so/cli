@@ -70,3 +70,25 @@ func TestRunWorkflowsGet(t *testing.T) {
 		}
 	})
 }
+
+func TestRunWorkflowsCreate(t *testing.T) {
+	t.Run("returns created workflow", func(t *testing.T) {
+		serveJSON(t, http.StatusOK, `{"id":"wf_new"}`)
+		workflow, err := runWorkflowsCreate(cfg(t))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if workflow.ID != "wf_new" {
+			t.Errorf("got workflow ID %q, want wf_new", workflow.ID)
+		}
+	})
+
+	t.Run("returns error on api failure", func(t *testing.T) {
+		serveJSON(t, http.StatusBadRequest, `{"message":"invalid request"}`)
+		_, err := runWorkflowsCreate(cfg(t))
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+}
