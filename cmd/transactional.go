@@ -1,16 +1,18 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/cmdutil"
 	"github.com/loops-so/cli/internal/config"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
@@ -71,9 +73,83 @@ func runTransactionalSend(cfg *config.Config, req loops.SendTransactionalRequest
 	return newAPIClient(cfg).SendTransactional(req)
 }
 
+type TransactionalCreateResponse struct {
+	ID                                 string   `json:"id"`
+	Name                               string   `json:"name"`
+	DraftEmailMessageID                string   `json:"draftEmailMessageId"`
+	DraftEmailMessageContentRevisionID string   `json:"draftEmailMessageContentRevisionId"`
+	PublishedEmailMessageID            *string  `json:"publishedEmailMessageId"`
+	CreatedAt                          string   `json:"createdAt"`
+	UpdatedAt                          string   `json:"updatedAt"`
+	DataVariables                      []string `json:"dataVariables"`
+}
+
+func runTransactionalCreate(cfg *config.Config, name string) (*TransactionalCreateResponse, error) {
+	body, err := json.Marshal(map[string]string{"name": name})
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := strings.TrimRight(cfg.EndpointURL, "/") + "/transactional-emails"
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "loops-cli/"+version)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, workflowErrorFromResponse(resp)
+	}
+
+	var created TransactionalCreateResponse
+	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+	return &created, nil
+}
+
 var transactionalCmd = &cobra.Command{
 	Use:   "transactional",
 	Short: "Manage transactional emails",
+}
+
+var transactionalCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a transactional email",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		created, err := runTransactionalCreate(cfg, name)
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), created)
+		}
+
+		fmt.Fprintf(
+			cmd.OutOrStdout(),
+			"Created. (transactionalId: %s, draftEmailMessageId: %s, contentRevisionId: %s)\n",
+			created.ID,
+			created.DraftEmailMessageID,
+			created.DraftEmailMessageContentRevisionID,
+		)
+		return nil
+	},
 }
 
 var transactionalListCmd = &cobra.Command{
@@ -196,6 +272,10 @@ var transactionalSendCmd = &cobra.Command{
 }
 
 func init() {
+	transactionalCreateCmd.Flags().StringP("name", "n", "", "Transactional email name (required)")
+	transactionalCreateCmd.MarkFlagRequired("name")
+	transactionalCmd.AddCommand(transactionalCreateCmd)
+
 	addPaginationFlags(transactionalListCmd)
 	addPickFlag(transactionalListCmd)
 	transactionalCmd.AddCommand(transactionalListCmd)

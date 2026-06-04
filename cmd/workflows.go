@@ -35,19 +35,20 @@ type WorkflowEmailMessage struct {
 }
 
 type WorkflowNode struct {
-	ID             string `json:"id"`
-	Type           string `json:"type"`
-	EmailMessageID string `json:"emailMessageId"`
+	TypeName       string   `json:"typeName"`
+	NextNodeIDs    []string `json:"nextNodeIds"`
+	EmailMessageID string   `json:"emailMessageId"`
 }
 
 type WorkflowDetail struct {
-	ID            string                 `json:"id"`
-	Name          string                 `json:"name"`
-	Status        string                 `json:"status"`
-	CreatedAt     string                 `json:"createdAt"`
-	UpdatedAt     string                 `json:"updatedAt"`
-	EmailMessages []WorkflowEmailMessage `json:"emailMessages"`
-	Nodes         []WorkflowNode         `json:"nodes"`
+	ID                 string                  `json:"id"`
+	Name               *string                 `json:"name"`
+	Description        *string                 `json:"description"`
+	Emoji              *string                 `json:"emoji"`
+	WorkflowRevisionID *string                 `json:"workflowRevisionId"`
+	RootID             string                  `json:"rootId"`
+	EmailMessages      []WorkflowEmailMessage  `json:"emailMessages"`
+	Nodes              map[string]WorkflowNode `json:"nodes"`
 }
 
 type workflowAPIError struct {
@@ -238,32 +239,52 @@ var workflowsGetCmd = &cobra.Command{
 
 		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 		t.Row("workflowId", workflow.ID)
-		t.Row("name", workflow.Name)
-		t.Row("status", workflow.Status)
-		t.Row("createdAt", workflow.CreatedAt)
-		t.Row("updatedAt", workflow.UpdatedAt)
+		t.Row("name", deref(workflow.Name))
+		t.Row("workflowRevisionId", deref(workflow.WorkflowRevisionID))
+		t.Row("rootId", workflow.RootID)
 		if err := t.Render(); err != nil {
 			return err
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout())
-		if len(workflow.EmailMessages) == 0 {
+		messageRows := workflowEmailMessageRows(workflow)
+		if len(messageRows) == 0 {
 			fmt.Fprintln(cmd.OutOrStdout(), "No workflow email messages found.")
 			return nil
 		}
 
 		messageTable := newStyledTable(cmd.OutOrStdout(), "MESSAGE ID", "NODE ID", "SUBJECT", "REVISION", "UPDATED")
-		for _, emailMessage := range workflow.EmailMessages {
-			messageTable.Row(
-				emailMessage.EmailMessageID,
-				deref(emailMessage.NodeID),
-				emailMessage.Subject,
-				deref(emailMessage.ContentRevisionID),
-				emailMessage.UpdatedAt,
-			)
+		for _, row := range messageRows {
+			messageTable.Row(row...)
 		}
 		return messageTable.Render()
 	},
+}
+
+func workflowEmailMessageRows(workflow *WorkflowDetail) [][]string {
+	rows := make([][]string, 0)
+	for _, emailMessage := range workflow.EmailMessages {
+		rows = append(rows, []string{
+			emailMessage.EmailMessageID,
+			deref(emailMessage.NodeID),
+			emailMessage.Subject,
+			deref(emailMessage.ContentRevisionID),
+			emailMessage.UpdatedAt,
+		})
+	}
+	for nodeID, node := range workflow.Nodes {
+		if node.EmailMessageID == "" {
+			continue
+		}
+		rows = append(rows, []string{
+			node.EmailMessageID,
+			nodeID,
+			"",
+			"",
+			"",
+		})
+	}
+	return rows
 }
 
 func init() {

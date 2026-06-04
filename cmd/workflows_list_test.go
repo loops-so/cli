@@ -34,7 +34,7 @@ func TestRunWorkflowsList(t *testing.T) {
 
 func TestRunWorkflowsGet(t *testing.T) {
 	t.Run("returns workflow detail", func(t *testing.T) {
-		serveJSON(t, http.StatusOK, `{"id":"wf_1","name":"Onboarding","status":"Draft","createdAt":"2026-04-01","updatedAt":"2026-04-02","emailMessages":[{"id":"em_1","emailMessageId":"em_1","nodeId":"node_1","nodeIds":["node_1"],"subject":"Welcome","previewText":"Start here","fromName":"Loops","fromEmail":"hello","replyToEmail":"","contentRevisionId":"rev_1","createdAt":"2026-04-01","updatedAt":"2026-04-02"}],"nodes":[{"id":"node_1","type":"SendEmailAction","emailMessageId":"em_1"}]}`)
+		serveJSON(t, http.StatusOK, `{"id":"wf_1","name":"Onboarding","workflowRevisionId":"wf_rev_1","rootId":"node_0","emailMessages":[{"id":"em_1","emailMessageId":"em_1","nodeId":"node_1","nodeIds":["node_1"],"subject":"Welcome","previewText":"Start here","fromName":"Loops","fromEmail":"hello","replyToEmail":"","contentRevisionId":"rev_1","createdAt":"2026-04-01","updatedAt":"2026-04-02"}],"nodes":{"node_1":{"typeName":"SendEmailAction","nextNodeIds":[],"emailMessageId":"em_1"}}}`)
 		workflow, err := runWorkflowsGet(cfg(t), "wf_1")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -55,6 +55,10 @@ func TestRunWorkflowsGet(t *testing.T) {
 		}
 		if deref(message.ContentRevisionID) != "rev_1" {
 			t.Errorf("got contentRevisionId %q, want rev_1", deref(message.ContentRevisionID))
+		}
+		node := workflow.Nodes["node_1"]
+		if node.EmailMessageID != "em_1" {
+			t.Errorf("got node emailMessageId %q, want em_1", node.EmailMessageID)
 		}
 	})
 
