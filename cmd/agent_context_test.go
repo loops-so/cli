@@ -103,8 +103,12 @@ func TestBuildAgentContext_FlagGroups(t *testing.T) {
 		t.Errorf("email-messages update missing mutex group [lmx lmx-file]; got %v",
 			upd.FlagGroups.MutuallyExclusive)
 	}
-	if len(upd.FlagGroups.OneRequired) != 1 {
-		t.Errorf("email-messages update should have exactly 1 oneRequired group; got %v",
+	if !groupListContains(upd.FlagGroups.OneRequired, []string{"expected-revision-id", "force"}) {
+		t.Errorf("email-messages update missing oneRequired group [expected-revision-id force]; got %v",
+			upd.FlagGroups.OneRequired)
+	}
+	if !groupListContains(upd.FlagGroups.OneRequired, []string{"subject", "preview-text", "from-name", "from-email", "reply-to", "lmx", "lmx-file"}) {
+		t.Errorf("email-messages update missing oneRequired content field group; got %v",
 			upd.FlagGroups.OneRequired)
 	}
 }
