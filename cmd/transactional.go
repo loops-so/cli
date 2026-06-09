@@ -143,6 +143,7 @@ var transactionalListCmd = &cobra.Command{
 			return runPicker(headers, rows, []pickBinding{
 				copyColumnBinding("enter", "copy id", "transactional ID", rows, 0, out),
 				copyColumnBinding("alt-enter", "copy publishedEmailMessageId", "published message ID", rows, 3, out),
+				copyColumnBinding("alt-d", "copy draftEmailMessageId", "draft message ID", rows, 2, out),
 			})
 		}
 

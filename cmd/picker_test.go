@@ -140,7 +140,7 @@ func TestRenderPickerHeader(t *testing.T) {
 		{
 			name:     "single",
 			bindings: []pickBinding{{Key: "enter", Label: "id"}},
-			want:     " enter ▶ id ",
+			want:     " enter ▶ id",
 		},
 		{
 			name: "two",
@@ -148,7 +148,7 @@ func TestRenderPickerHeader(t *testing.T) {
 				{Key: "enter", Label: "id"},
 				{Key: "alt-enter", Label: "messageId"},
 			},
-			want: " enter ▶ id   alt-enter ▶ messageId ",
+			want: " enter ▶ id\n alt-enter ▶ messageId",
 		},
 		{
 			name: "three",
@@ -157,7 +157,7 @@ func TestRenderPickerHeader(t *testing.T) {
 				{Key: "alt-enter", Label: "messageId"},
 				{Key: "ctrl-y", Label: "name"},
 			},
-			want: " enter ▶ id   alt-enter ▶ messageId   ctrl-y ▶ name ",
+			want: " enter ▶ id\n alt-enter ▶ messageId\n ctrl-y ▶ name",
 		},
 	}
 	for _, tc := range tests {
