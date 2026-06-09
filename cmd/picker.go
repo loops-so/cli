@@ -127,9 +127,9 @@ func pickerColorSpec() string {
 func renderPickerHeader(bindings []pickBinding) string {
 	parts := make([]string, len(bindings))
 	for i, b := range bindings {
-		parts[i] = fmt.Sprintf("%s ▶ %s", b.Key, b.Label)
+		parts[i] = fmt.Sprintf(" %s ▶ %s", b.Key, b.Label)
 	}
-	return " " + strings.Join(parts, "   ") + " "
+	return strings.Join(parts, "\n")
 }
 
 func runPicker(headers []string, rows [][]string, bindings []pickBinding) error {

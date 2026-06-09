@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/cmdutil"
 	"github.com/loops-so/cli/internal/config"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
@@ -53,18 +53,38 @@ func attachmentFromPath(path string) (loops.Attachment, error) {
 	}, nil
 }
 
-func runTransactionalList(cfg *config.Config, params loops.PaginationParams) ([]loops.TransactionalEmail, error) {
+func runTransactionalList(cfg *config.Config, params loops.PaginationParams) ([]loops.Transactional, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		emails, _, err := client.ListTransactional(params)
+		emails, _, err := client.ListTransactionals(params)
 		return emails, err
 	}
-	return loops.Paginate(func(cursor string) ([]loops.TransactionalEmail, *loops.Pagination, error) {
-		return client.ListTransactional(loops.PaginationParams{
+	return loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pagination, error) {
+		return client.ListTransactionals(loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})
 	})
+}
+
+func runTransactionalGet(cfg *config.Config, id string) (*loops.Transactional, error) {
+	return newAPIClient(cfg).GetTransactional(id)
+}
+
+func runTransactionalCreate(cfg *config.Config, req loops.CreateTransactionalRequest) (*loops.TransactionalDraft, error) {
+	return newAPIClient(cfg).CreateTransactional(req)
+}
+
+func runTransactionalUpdate(cfg *config.Config, id string, req loops.UpdateTransactionalRequest) (*loops.Transactional, error) {
+	return newAPIClient(cfg).UpdateTransactional(id, req)
+}
+
+func runTransactionalDraft(cfg *config.Config, id string) (*loops.TransactionalDraft, error) {
+	return newAPIClient(cfg).EnsureTransactionalDraft(id)
+}
+
+func runTransactionalPublish(cfg *config.Config, id string) (*loops.Transactional, error) {
+	return newAPIClient(cfg).PublishTransactional(id)
 }
 
 func runTransactionalSend(cfg *config.Config, req loops.SendTransactionalRequest) error {
@@ -78,7 +98,7 @@ var transactionalCmd = &cobra.Command{
 
 var transactionalListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List published transactional emails",
+	Short: "List transactional emails",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := validatePickFlags(cmd); err != nil {
 			return err
@@ -89,15 +109,14 @@ var transactionalListCmd = &cobra.Command{
 			return err
 		}
 
-		params := paginationParams(cmd)
-		emails, err := runTransactionalList(cfg, params)
+		emails, err := runTransactionalList(cfg, paginationParams(cmd))
 		if err != nil {
 			return err
 		}
 
 		if isJSONOutput() {
 			if emails == nil {
-				emails = []loops.TransactionalEmail{}
+				emails = []loops.Transactional{}
 			}
 			return printJSON(cmd.OutOrStdout(), emails)
 		}
@@ -107,15 +126,24 @@ var transactionalListCmd = &cobra.Command{
 			return nil
 		}
 
-		headers := []string{"ID", "NAME", "LAST UPDATED", "VARIABLES"}
+		headers := []string{"ID", "NAME", "DRAFT MSG", "PUBLISHED MSG", "UPDATED"}
 		rows := make([][]string, 0, len(emails))
 		for _, e := range emails {
-			rows = append(rows, []string{e.ID, e.Name, e.LastUpdated, strings.Join(e.DataVariables, ", ")})
+			rows = append(rows, []string{
+				e.ID,
+				e.Name,
+				deref(e.DraftEmailMessageID),
+				deref(e.PublishedEmailMessageID),
+				e.UpdatedAt,
+			})
 		}
 
 		if isPicking(cmd) {
+			out := cmd.OutOrStdout()
 			return runPicker(headers, rows, []pickBinding{
-				copyColumnBinding("enter", "copy id", "transactional ID", rows, 0, cmd.OutOrStdout()),
+				copyColumnBinding("enter", "copy id", "transactional ID", rows, 0, out),
+				copyColumnBinding("alt-enter", "copy publishedEmailMessageId", "published message ID", rows, 3, out),
+				copyColumnBinding("alt-d", "copy draftEmailMessageId", "draft message ID", rows, 2, out),
 			})
 		}
 
@@ -125,6 +153,145 @@ var transactionalListCmd = &cobra.Command{
 		}
 		return t.Render()
 	},
+}
+
+var transactionalGetCmd = &cobra.Command{
+	Use:   "get <id>",
+	Short: "Get a transactional email",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		tx, err := runTransactionalGet(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), tx)
+		}
+
+		return printTransactional(cmd, tx)
+	},
+}
+
+var transactionalCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a transactional email with an empty draft",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		tx, err := runTransactionalCreate(cfg, loops.CreateTransactionalRequest{Name: name})
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), tx)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Created. (id: %s, draftEmailMessageId: %s, contentRevisionId: %s)\n\n",
+			tx.ID, deref(tx.DraftEmailMessageID), deref(tx.DraftEmailMessageContentRevisionID))
+		return printTransactional(cmd, &tx.Transactional)
+	},
+}
+
+var transactionalUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "Update a transactional email",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		tx, err := runTransactionalUpdate(cfg, args[0], loops.UpdateTransactionalRequest{Name: name})
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), tx)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (id: %s)\n\n", tx.ID)
+		return printTransactional(cmd, tx)
+	},
+}
+
+var transactionalDraftCmd = &cobra.Command{
+	Use:   "draft <id>",
+	Short: "Ensure a draft exists for a transactional email",
+	Long: "Ensures the transactional email has a draft. If a draft already exists it is returned unchanged;\n" +
+		"otherwise a new empty draft is created (seeded from the most recent published version when present).",
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		tx, err := runTransactionalDraft(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), tx)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Draft ready. (id: %s, draftEmailMessageId: %s, contentRevisionId: %s)\n\n",
+			tx.ID, deref(tx.DraftEmailMessageID), deref(tx.DraftEmailMessageContentRevisionID))
+		return printTransactional(cmd, &tx.Transactional)
+	},
+}
+
+var transactionalPublishCmd = &cobra.Command{
+	Use:   "publish <id>",
+	Short: "Publish the current draft of a transactional email",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		tx, err := runTransactionalPublish(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), tx)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Published. (id: %s, publishedEmailMessageId: %s)\n\n",
+			tx.ID, deref(tx.PublishedEmailMessageID))
+		return printTransactional(cmd, tx)
+	},
+}
+
+func printTransactional(cmd *cobra.Command, tx *loops.Transactional) error {
+	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
+	t.Row("transactionalId", tx.ID)
+	t.Row("name", tx.Name)
+	t.Row("draftEmailMessageId", deref(tx.DraftEmailMessageID))
+	t.Row("publishedEmailMessageId", deref(tx.PublishedEmailMessageID))
+	t.Row("dataVariables", strings.Join(tx.DataVariables, ", "))
+	t.Row("createdAt", tx.CreatedAt)
+	t.Row("updatedAt", tx.UpdatedAt)
+	return t.Render()
 }
 
 func transactionalSendRunE(cmd *cobra.Command, args []string) error {
@@ -199,6 +366,19 @@ func init() {
 	addPaginationFlags(transactionalListCmd)
 	addPickFlag(transactionalListCmd)
 	transactionalCmd.AddCommand(transactionalListCmd)
+
+	transactionalCmd.AddCommand(transactionalGetCmd)
+
+	transactionalCreateCmd.Flags().StringP("name", "n", "", "Transactional email name (required)")
+	transactionalCreateCmd.MarkFlagRequired("name")
+	transactionalCmd.AddCommand(transactionalCreateCmd)
+
+	transactionalUpdateCmd.Flags().StringP("name", "n", "", "Transactional email name (required)")
+	transactionalUpdateCmd.MarkFlagRequired("name")
+	transactionalCmd.AddCommand(transactionalUpdateCmd)
+
+	transactionalCmd.AddCommand(transactionalDraftCmd)
+	transactionalCmd.AddCommand(transactionalPublishCmd)
 
 	addTransactionalSendFlags(transactionalSendCmd)
 	transactionalCmd.AddCommand(transactionalSendCmd)
