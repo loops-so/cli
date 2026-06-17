@@ -9,7 +9,7 @@ import (
 
 func TestRunCampaignsList(t *testing.T) {
 	t.Run("returns campaigns", func(t *testing.T) {
-		serveJSON(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[{"campaignId":"cmp_1","emailMessageId":"em_1","name":"Spring","subject":"Hi","status":"Draft","createdAt":"2026-04-01","updatedAt":"2026-04-02"}]}`)
+		serveJSON(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[{"campaignId":"cmp_1","emailMessageId":"em_1","name":"Spring","status":"Draft","createdAt":"2026-04-01","updatedAt":"2026-04-02","scheduling":{"method":"now","timestamp":null}}]}`)
 		campaigns, err := runCampaignsList(cfg(t), loops.PaginationParams{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)

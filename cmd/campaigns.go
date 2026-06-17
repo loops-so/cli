@@ -8,6 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func formatCampaignScheduling(s loops.CampaignScheduling) string {
+	if s.Method == loops.CampaignSchedulingMethodSchedule && s.Timestamp != nil {
+		return "schedule @ " + *s.Timestamp
+	}
+	return s.Method
+}
+
 func runCampaignsGet(cfg *config.Config, id string) (*loops.Campaign, error) {
 	return newAPIClient(cfg).GetCampaign(id)
 }
@@ -61,7 +68,7 @@ var campaignsListCmd = &cobra.Command{
 			return nil
 		}
 
-		headers := []string{"ID", "MESSAGE ID", "NAME", "STATUS", "SUBJECT", "UPDATED"}
+		headers := []string{"ID", "MESSAGE ID", "NAME", "STATUS", "SCHEDULING", "UPDATED"}
 		rows := make([][]string, 0, len(campaigns))
 		for _, c := range campaigns {
 			rows = append(rows, []string{
@@ -69,7 +76,7 @@ var campaignsListCmd = &cobra.Command{
 				deref(c.EmailMessageID),
 				c.Name,
 				c.Status,
-				c.Subject,
+				formatCampaignScheduling(c.Scheduling),
 				c.UpdatedAt,
 			})
 		}
@@ -135,7 +142,10 @@ var campaignsUpdateCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := runCampaignsUpdate(cfg, args[0], loops.UpdateCampaignRequest{Name: name})
+		c, err := runCampaignsUpdate(cfg, args[0], loops.UpdateCampaignRequest{
+			Name: name,
+			Set:  map[string]bool{"name": true},
+		})
 		if err != nil {
 			return err
 		}
