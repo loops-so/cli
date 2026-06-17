@@ -10,7 +10,7 @@ import (
 func TestRunCampaignsUpdate(t *testing.T) {
 	body := `{
 		"success": true,
-		"campaignId": "cmp_abc123",
+		"id": "cmp_abc123",
 		"emailMessageId": "em_abc123",
 		"name": "Renamed",
 		"status": "Draft",
@@ -24,8 +24,8 @@ func TestRunCampaignsUpdate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if c.CampaignID != "cmp_abc123" {
-			t.Errorf("CampaignID = %q, want cmp_abc123", c.CampaignID)
+		if c.ID != "cmp_abc123" {
+			t.Errorf("ID = %q, want cmp_abc123", c.ID)
 		}
 		if c.Name != "Renamed" {
 			t.Errorf("Name = %q, want Renamed", c.Name)

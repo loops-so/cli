@@ -177,7 +177,7 @@ var emailMessagesUpdateCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), msg)
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (emailMessageId: %s, contentRevisionId: %s)\n", msg.EmailMessageID, deref(msg.ContentRevisionID))
+		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (emailMessageId: %s, contentRevisionId: %s)\n", msg.ID, deref(msg.ContentRevisionID))
 		fmt.Fprintln(cmd.OutOrStdout())
 		if err := printEmailMessage(cmd, msg); err != nil {
 			return err
@@ -189,7 +189,7 @@ var emailMessagesUpdateCmd = &cobra.Command{
 
 func printEmailMessage(cmd *cobra.Command, msg *loops.EmailMessage) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
-	t.Row("emailMessageId", msg.EmailMessageID)
+	t.Row("emailMessageId", msg.ID)
 	t.Row("campaignId", deref(msg.CampaignID))
 	t.Row("subject", msg.Subject)
 	t.Row("previewText", msg.PreviewText)

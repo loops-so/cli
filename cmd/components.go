@@ -64,7 +64,7 @@ var componentsListCmd = &cobra.Command{
 		headers := []string{"ID", "NAME"}
 		rows := make([][]string, 0, len(components))
 		for _, c := range components {
-			rows = append(rows, []string{c.ComponentID, c.Name})
+			rows = append(rows, []string{c.ID, c.Name})
 		}
 
 		if isPicking(cmd) {
@@ -101,7 +101,7 @@ var componentsGetCmd = &cobra.Command{
 		}
 
 		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
-		t.Row("componentId", c.ComponentID)
+		t.Row("componentId", c.ID)
 		t.Row("name", c.Name)
 		if err := t.Render(); err != nil {
 			return err

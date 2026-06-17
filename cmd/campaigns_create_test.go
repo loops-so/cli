@@ -10,7 +10,7 @@ import (
 func TestRunCampaignsCreate(t *testing.T) {
 	body := `{
 		"success": true,
-		"campaignId": "cmp_new",
+		"id": "cmp_new",
 		"name": "Spring",
 		"status": "Draft",
 		"createdAt": "2026-04-20T10:00:00Z",
@@ -25,8 +25,8 @@ func TestRunCampaignsCreate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp.CampaignID != "cmp_new" {
-			t.Errorf("CampaignID = %q, want cmp_new", resp.CampaignID)
+		if resp.ID != "cmp_new" {
+			t.Errorf("ID = %q, want cmp_new", resp.ID)
 		}
 		if deref(resp.EmailMessageID) != "em_new" {
 			t.Errorf("EmailMessageID = %q, want em_new", deref(resp.EmailMessageID))

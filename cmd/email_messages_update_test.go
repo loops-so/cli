@@ -14,7 +14,7 @@ import (
 func TestRunEmailMessagesUpdate(t *testing.T) {
 	body := `{
 		"success": true,
-		"emailMessageId": "em_abc123",
+		"id": "em_abc123",
 		"campaignId": "cmp_xyz789",
 		"subject": "Updated",
 		"previewText": "",
@@ -35,8 +35,8 @@ func TestRunEmailMessagesUpdate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if msg.EmailMessageID != "em_abc123" {
-			t.Errorf("EmailMessageID = %q, want em_abc123", msg.EmailMessageID)
+		if msg.ID != "em_abc123" {
+			t.Errorf("ID = %q, want em_abc123", msg.ID)
 		}
 		if deref(msg.ContentRevisionID) != "rev_2" {
 			t.Errorf("ContentRevisionID = %q, want rev_2", deref(msg.ContentRevisionID))
@@ -171,7 +171,7 @@ func TestFetchLatestRevisionID(t *testing.T) {
 	t.Run("returns current contentRevisionId from GET", func(t *testing.T) {
 		body := `{
 			"success": true,
-			"emailMessageId": "em_abc123",
+			"id": "em_abc123",
 			"campaignId": "cmp_xyz789",
 			"subject": "Hello",
 			"previewText": "",

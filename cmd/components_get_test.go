@@ -8,7 +8,7 @@ import (
 func TestRunComponentsGet(t *testing.T) {
 	body := `{
 		"success": true,
-		"componentId": "cmpt_abc123",
+		"id": "cmpt_abc123",
 		"name": "Header",
 		"lmx": "<H1>Hello</H1>"
 	}`
@@ -19,8 +19,8 @@ func TestRunComponentsGet(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if c.ComponentID != "cmpt_abc123" {
-			t.Errorf("ComponentID = %q, want cmpt_abc123", c.ComponentID)
+		if c.ID != "cmpt_abc123" {
+			t.Errorf("ID = %q, want cmpt_abc123", c.ID)
 		}
 		if c.Name != "Header" {
 			t.Errorf("Name = %q, want Header", c.Name)

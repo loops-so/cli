@@ -19,13 +19,13 @@ func runCampaignsGet(cfg *config.Config, id string) (*loops.Campaign, error) {
 	return newAPIClient(cfg).GetCampaign(id)
 }
 
-func runCampaignsList(cfg *config.Config, params loops.PaginationParams) ([]loops.CampaignListItem, error) {
+func runCampaignsList(cfg *config.Config, params loops.PaginationParams) ([]loops.Campaign, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		campaigns, _, err := client.ListCampaigns(params)
 		return campaigns, err
 	}
-	return loops.Paginate(func(cursor string) ([]loops.CampaignListItem, *loops.Pagination, error) {
+	return loops.Paginate(func(cursor string) ([]loops.Campaign, *loops.Pagination, error) {
 		return client.ListCampaigns(loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
@@ -58,7 +58,7 @@ var campaignsListCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			if campaigns == nil {
-				campaigns = []loops.CampaignListItem{}
+				campaigns = []loops.Campaign{}
 			}
 			return printJSON(cmd.OutOrStdout(), campaigns)
 		}
@@ -72,7 +72,7 @@ var campaignsListCmd = &cobra.Command{
 		rows := make([][]string, 0, len(campaigns))
 		for _, c := range campaigns {
 			rows = append(rows, []string{
-				c.CampaignID,
+				c.ID,
 				deref(c.EmailMessageID),
 				c.Name,
 				c.Status,
@@ -121,7 +121,7 @@ var campaignsCreateCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), resp)
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Created. (id: %s, emailMessageId: %s, contentRevisionId: %s)\n", resp.CampaignID, deref(resp.EmailMessageID), deref(resp.EmailMessageContentRevisionID))
+		fmt.Fprintf(cmd.OutOrStdout(), "Created. (id: %s, emailMessageId: %s, contentRevisionId: %s)\n", resp.ID, deref(resp.EmailMessageID), deref(resp.EmailMessageContentRevisionID))
 		return nil
 	},
 }
@@ -154,10 +154,10 @@ var campaignsUpdateCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), c)
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (id: %s)\n\n", c.CampaignID)
+		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (id: %s)\n\n", c.ID)
 
 		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
-		t.Row("campaignId", c.CampaignID)
+		t.Row("campaignId", c.ID)
 		t.Row("emailMessageId", deref(c.EmailMessageID))
 		t.Row("name", c.Name)
 		t.Row("status", c.Status)
@@ -187,7 +187,7 @@ var campaignsGetCmd = &cobra.Command{
 		}
 
 		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
-		t.Row("campaignId", c.CampaignID)
+		t.Row("campaignId", c.ID)
 		t.Row("emailMessageId", deref(c.EmailMessageID))
 		t.Row("name", c.Name)
 		t.Row("status", c.Status)

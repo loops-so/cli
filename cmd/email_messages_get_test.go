@@ -8,7 +8,7 @@ import (
 func TestRunEmailMessagesGet(t *testing.T) {
 	body := `{
 		"success": true,
-		"emailMessageId": "em_abc123",
+		"id": "em_abc123",
 		"campaignId": "cmp_xyz789",
 		"subject": "Hello",
 		"previewText": "Preview",
@@ -26,8 +26,8 @@ func TestRunEmailMessagesGet(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if msg.EmailMessageID != "em_abc123" {
-			t.Errorf("EmailMessageID = %q, want em_abc123", msg.EmailMessageID)
+		if msg.ID != "em_abc123" {
+			t.Errorf("ID = %q, want em_abc123", msg.ID)
 		}
 		if deref(msg.CampaignID) != "cmp_xyz789" {
 			t.Errorf("CampaignID = %q, want cmp_xyz789", deref(msg.CampaignID))
