@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/loops-so/loops-go"
@@ -149,6 +150,76 @@ func TestCampaignFieldParamsFromCmd(t *testing.T) {
 		}
 		if _, err := campaignFieldParamsFromCmd(cmd); err == nil {
 			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run(`mailing-list-id "null" sentinel clears the field`, func(t *testing.T) {
+		cmd := newCampaignFieldCmd()
+		if err := cmd.ParseFlags([]string{"--mailing-list-id", "null"}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		p, err := campaignFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.MailingListID != nil {
+			t.Errorf("MailingListID = %v, want nil", p.MailingListID)
+		}
+		if !p.Set["mailingListId"] {
+			t.Error(`Set["mailingListId"] = false, want true`)
+		}
+	})
+
+	t.Run(`audience-segment-id "null" sentinel clears the field`, func(t *testing.T) {
+		cmd := newCampaignFieldCmd()
+		if err := cmd.ParseFlags([]string{"--audience-segment-id", "null"}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		p, err := campaignFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.AudienceSegmentID != nil {
+			t.Errorf("AudienceSegmentID = %v, want nil", p.AudienceSegmentID)
+		}
+		if !p.Set["audienceSegmentId"] {
+			t.Error(`Set["audienceSegmentId"] = false, want true`)
+		}
+	})
+
+	t.Run(`audience-filter-file "null" sentinel clears the filter`, func(t *testing.T) {
+		cmd := newCampaignFieldCmd()
+		if err := cmd.ParseFlags([]string{"--audience-filter-file", "null"}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		p, err := campaignFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.AudienceFilter != nil {
+			t.Errorf("AudienceFilter = %v, want nil", p.AudienceFilter)
+		}
+		if !p.Set["audienceFilter"] {
+			t.Error(`Set["audienceFilter"] = false, want true`)
+		}
+	})
+
+	t.Run("empty value on nullable flag is rejected", func(t *testing.T) {
+		cases := []string{"mailing-list-id", "audience-segment-id", "audience-filter-file"}
+		for _, flag := range cases {
+			t.Run(flag, func(t *testing.T) {
+				cmd := newCampaignFieldCmd()
+				if err := cmd.ParseFlags([]string{"--" + flag, ""}); err != nil {
+					t.Fatalf("ParseFlags: %v", err)
+				}
+				_, err := campaignFieldParamsFromCmd(cmd)
+				if err == nil {
+					t.Fatalf("--%s with empty value: expected error, got nil", flag)
+				}
+				if !strings.Contains(err.Error(), `"null"`) {
+					t.Errorf(`--%s error = %q, want it to mention "null"`, flag, err.Error())
+				}
+			})
 		}
 	})
 }

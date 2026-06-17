@@ -44,6 +44,29 @@ func TestRunCampaignsUpdate(t *testing.T) {
 		}
 	})
 
+	t.Run("nil pointer + Set sends JSON null on the wire", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, body)
+		_, err := runCampaignsUpdate(cfg(t), "cmp_abc123", loops.UpdateCampaignRequest{
+			MailingListID: nil,
+			Set:           map[string]bool{"mailingListId": true},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var sent map[string]any
+		if err := json.Unmarshal(got.Body, &sent); err != nil {
+			t.Fatalf("decode request body: %v\nraw: %s", err, got.Body)
+		}
+		v, ok := sent["mailingListId"]
+		if !ok {
+			t.Fatalf("mailingListId missing from request body: %v", sent)
+		}
+		if v != nil {
+			t.Errorf("mailingListId = %v, want nil (JSON null)", v)
+		}
+	})
+
 	t.Run("Set map controls which fields are sent", func(t *testing.T) {
 		got := serveJSONCapture(t, http.StatusOK, body)
 		ts := "2026-07-01T12:00:00Z"

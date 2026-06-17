@@ -29,8 +29,10 @@ func formatAudienceFilter(f *loops.AudienceFilter) string {
 // user explicitly provided (keyed by JSON field name) so partial updates can
 // send only those fields.
 //
-// Clearing nullable fields (mailing-list-id, audience-segment-id,
-// audience-filter) is not yet supported on update; setting values is.
+// For nullable fields (MailingListID, AudienceSegmentID, AudienceFilter), a
+// pointer of nil with the corresponding Set key true encodes "send null" —
+// which the API treats as a clear. CLI users opt in via the string sentinel
+// "null".
 type campaignFieldParams struct {
 	Name              string
 	CampaignGroupID   string
@@ -41,16 +43,37 @@ type campaignFieldParams struct {
 	Set               map[string]bool
 }
 
+// nullSentinel is the value users pass to a nullable string flag to clear the
+// server-side field (sent as JSON null). Empty string is rejected so users
+// don't accidentally write empty values.
+const nullSentinel = "null"
+
 func addCampaignFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().StringP("name", "n", "", "Campaign name")
 	cmd.Flags().String("campaign-group-id", "", "Campaign group ID")
-	cmd.Flags().String("mailing-list-id", "", "Mailing list ID to target")
-	cmd.Flags().String("audience-segment-id", "", "Audience segment ID to target")
-	cmd.Flags().String("audience-filter-file", "", "Path to a JSON file with an ad-hoc audience filter")
+	cmd.Flags().String("mailing-list-id", "", `Mailing list ID to target. Pass "null" to clear.`)
+	cmd.Flags().String("audience-segment-id", "", `Audience segment ID to target. Pass "null" to clear.`)
+	cmd.Flags().String("audience-filter-file", "", `Path to a JSON file with an ad-hoc audience filter. Pass "null" to clear.`)
 	cmd.Flags().Bool("schedule-now", false, "Send immediately when published")
 	cmd.Flags().String("schedule-at", "", "Send at the given RFC3339 timestamp (e.g. 2026-07-01T12:00:00Z)")
 	cmd.MarkFlagsMutuallyExclusive("audience-segment-id", "audience-filter-file")
 	cmd.MarkFlagsMutuallyExclusive("schedule-now", "schedule-at")
+}
+
+// readNullableFlag returns (pointerOrNil, set, err) for a string flag that
+// supports the "null" sentinel. Empty string is rejected.
+func readNullableFlag(cmd *cobra.Command, flagName string) (*string, bool, error) {
+	if !cmd.Flags().Changed(flagName) {
+		return nil, false, nil
+	}
+	v, _ := cmd.Flags().GetString(flagName)
+	if v == "" {
+		return nil, false, fmt.Errorf(`--%s requires a value; pass "null" to clear`, flagName)
+	}
+	if v == nullSentinel {
+		return nil, true, nil
+	}
+	return &v, true, nil
 }
 
 func campaignFieldParamsFromCmd(cmd *cobra.Command) (campaignFieldParams, error) {
@@ -64,28 +87,38 @@ func campaignFieldParamsFromCmd(cmd *cobra.Command) (campaignFieldParams, error)
 		p.CampaignGroupID, _ = cmd.Flags().GetString("campaign-group-id")
 		p.Set["campaignGroupId"] = true
 	}
-	if cmd.Flags().Changed("mailing-list-id") {
-		v, _ := cmd.Flags().GetString("mailing-list-id")
-		p.MailingListID = &v
+	if v, set, err := readNullableFlag(cmd, "mailing-list-id"); err != nil {
+		return p, err
+	} else if set {
+		p.MailingListID = v
 		p.Set["mailingListId"] = true
 	}
-	if cmd.Flags().Changed("audience-segment-id") {
-		v, _ := cmd.Flags().GetString("audience-segment-id")
-		p.AudienceSegmentID = &v
+	if v, set, err := readNullableFlag(cmd, "audience-segment-id"); err != nil {
+		return p, err
+	} else if set {
+		p.AudienceSegmentID = v
 		p.Set["audienceSegmentId"] = true
 	}
 	if cmd.Flags().Changed("audience-filter-file") {
 		path, _ := cmd.Flags().GetString("audience-filter-file")
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return p, fmt.Errorf("read --audience-filter-file: %w", err)
+		if path == "" {
+			return p, fmt.Errorf(`--audience-filter-file requires a value; pass "null" to clear`)
 		}
-		var f loops.AudienceFilter
-		if err := json.Unmarshal(data, &f); err != nil {
-			return p, fmt.Errorf("parse --audience-filter-file: %w", err)
+		if path == nullSentinel {
+			p.AudienceFilter = nil
+			p.Set["audienceFilter"] = true
+		} else {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return p, fmt.Errorf("read --audience-filter-file: %w", err)
+			}
+			var f loops.AudienceFilter
+			if err := json.Unmarshal(data, &f); err != nil {
+				return p, fmt.Errorf("parse --audience-filter-file: %w", err)
+			}
+			p.AudienceFilter = &f
+			p.Set["audienceFilter"] = true
 		}
-		p.AudienceFilter = &f
-		p.Set["audienceFilter"] = true
 	}
 	if cmd.Flags().Changed("schedule-now") {
 		p.Scheduling = &loops.CampaignSchedulingRequest{Method: loops.CampaignSchedulingMethodNow}
