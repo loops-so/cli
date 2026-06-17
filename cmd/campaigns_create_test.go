@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -41,6 +42,45 @@ func TestRunCampaignsCreate(t *testing.T) {
 		_, err := runCampaignsCreate(cfg(t), loops.CreateCampaignRequest{})
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("sends targeting and scheduling fields", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusCreated, body)
+		mailingList := "ml_1"
+		ts := "2026-07-01T12:00:00Z"
+		_, err := runCampaignsCreate(cfg(t), loops.CreateCampaignRequest{
+			Name:            "Spring",
+			CampaignGroupID: "cg_1",
+			MailingListID:   &mailingList,
+			Scheduling: &loops.CampaignSchedulingRequest{
+				Method:    loops.CampaignSchedulingMethodSchedule,
+				Timestamp: ts,
+			},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var sent map[string]any
+		if err := json.Unmarshal(got.Body, &sent); err != nil {
+			t.Fatalf("decode request body: %v\nraw: %s", err, got.Body)
+		}
+		if sent["name"] != "Spring" {
+			t.Errorf("name = %v, want Spring", sent["name"])
+		}
+		if sent["campaignGroupId"] != "cg_1" {
+			t.Errorf("campaignGroupId = %v, want cg_1", sent["campaignGroupId"])
+		}
+		if sent["mailingListId"] != "ml_1" {
+			t.Errorf("mailingListId = %v, want ml_1", sent["mailingListId"])
+		}
+		sched, ok := sent["scheduling"].(map[string]any)
+		if !ok {
+			t.Fatalf("scheduling not an object: %v", sent["scheduling"])
+		}
+		if sched["method"] != "schedule" || sched["timestamp"] != ts {
+			t.Errorf("scheduling = %v", sched)
 		}
 	})
 }
