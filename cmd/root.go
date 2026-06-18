@@ -75,7 +75,6 @@ func Execute() {
 		context.Background(),
 		rootCmd,
 		fang.WithVersion(version),
-		fang.WithCommit(commit),
 		fang.WithErrorHandler(jsonAwareErrorHandler),
 	)
 
