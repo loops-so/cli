@@ -8,7 +8,7 @@ import (
 func TestRunThemesGet(t *testing.T) {
 	body := `{
 		"success": true,
-		"themeId": "thm_abc123",
+		"id": "thm_abc123",
 		"name": "Default",
 		"isDefault": true,
 		"createdAt": "2026-04-01T10:00:00Z",
@@ -27,8 +27,8 @@ func TestRunThemesGet(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if th.ThemeID != "thm_abc123" {
-			t.Errorf("ThemeID = %q, want thm_abc123", th.ThemeID)
+		if th.ID != "thm_abc123" {
+			t.Errorf("ID = %q, want thm_abc123", th.ID)
 		}
 		if th.Name != "Default" {
 			t.Errorf("Name = %q, want Default", th.Name)

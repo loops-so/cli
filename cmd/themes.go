@@ -66,7 +66,7 @@ var themesListCmd = &cobra.Command{
 		rows := make([][]string, 0, len(themes))
 		for _, th := range themes {
 			rows = append(rows, []string{
-				th.ThemeID,
+				th.ID,
 				th.Name,
 				strconv.FormatBool(th.IsDefault),
 				th.UpdatedAt,
@@ -107,7 +107,7 @@ var themesGetCmd = &cobra.Command{
 		}
 
 		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
-		t.Row("themeId", th.ThemeID)
+		t.Row("themeId", th.ID)
 		t.Row("name", th.Name)
 		t.Row("isDefault", strconv.FormatBool(th.IsDefault))
 		t.Row("createdAt", th.CreatedAt)

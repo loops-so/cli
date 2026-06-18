@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -14,7 +15,7 @@ import (
 func TestRunEmailMessagesUpdate(t *testing.T) {
 	body := `{
 		"success": true,
-		"emailMessageId": "em_abc123",
+		"id": "em_abc123",
 		"campaignId": "cmp_xyz789",
 		"subject": "Updated",
 		"previewText": "",
@@ -35,8 +36,8 @@ func TestRunEmailMessagesUpdate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if msg.EmailMessageID != "em_abc123" {
-			t.Errorf("EmailMessageID = %q, want em_abc123", msg.EmailMessageID)
+		if msg.ID != "em_abc123" {
+			t.Errorf("ID = %q, want em_abc123", msg.ID)
 		}
 		if deref(msg.ContentRevisionID) != "rev_2" {
 			t.Errorf("ContentRevisionID = %q, want rev_2", deref(msg.ContentRevisionID))
@@ -165,13 +166,145 @@ func TestEmailMessageFieldParamsFromCmd(t *testing.T) {
 			t.Fatal("expected error for missing file, got nil")
 		}
 	})
+
+	t.Run("cc/bcc/language-code populate fields", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{
+			"--cc", "cc@acme.com",
+			"--bcc", "bcc@acme.com",
+			"--language-code", "en-US",
+		})
+		params, err := emailMessageFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if params.CCEmail != "cc@acme.com" {
+			t.Errorf("CCEmail = %q", params.CCEmail)
+		}
+		if params.BCCEmail != "bcc@acme.com" {
+			t.Errorf("BCCEmail = %q", params.BCCEmail)
+		}
+		if params.LanguageCode != "en-US" {
+			t.Errorf("LanguageCode = %q", params.LanguageCode)
+		}
+		for _, k := range []string{"ccEmail", "bccEmail", "languageCode"} {
+			if !params.Set[k] {
+				t.Errorf(`Set[%q] = false, want true`, k)
+			}
+		}
+	})
+
+	t.Run("email-format styled accepted", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{"--email-format", "styled"})
+		params, err := emailMessageFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if params.EmailFormat != loops.EmailFormatStyled {
+			t.Errorf("EmailFormat = %q", params.EmailFormat)
+		}
+	})
+
+	t.Run("email-format other value rejected", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{"--email-format", "fancy"})
+		if _, err := emailMessageFieldParamsFromCmd(cmd); err == nil {
+			t.Fatal("expected error for invalid --email-format, got nil")
+		}
+	})
+
+	t.Run("contact-fallback parses pairs into pointer map", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{
+			"--contact-fallback", "firstName=Friend",
+			"--contact-fallback", "lastName=There",
+		})
+		params, err := emailMessageFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(params.ContactPropertiesFallbacks) != 2 {
+			t.Fatalf("len = %d, want 2", len(params.ContactPropertiesFallbacks))
+		}
+		if v := params.ContactPropertiesFallbacks["firstName"]; v == nil || *v != "Friend" {
+			t.Errorf("firstName = %v, want pointer to Friend", v)
+		}
+		if !params.Set["contactPropertiesFallbacks"] {
+			t.Error("expected contactPropertiesFallbacks in Set")
+		}
+	})
+
+	t.Run("malformed fallback pair returns error", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{"--data-fallback", "noequals"})
+		if _, err := emailMessageFieldParamsFromCmd(cmd); err == nil {
+			t.Fatal("expected error for malformed pair, got nil")
+		}
+	})
+}
+
+func TestRunEmailMessagesPreview(t *testing.T) {
+	t.Run("sends emails and variables", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, `{"id":"em_abc123"}`)
+		resp, err := runEmailMessagesPreview(cfg(t), "em_abc123", loops.EmailMessagePreviewRequest{
+			Emails:            []string{"a@b.com", "c@d.com"},
+			ContactProperties: map[string]string{"firstName": "Pat"},
+			EventProperties:   map[string]string{"signupSource": "homepage"},
+			DataVariables:     map[string]any{"orderId": "123"},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.ID != "em_abc123" {
+			t.Errorf("ID = %q, want em_abc123", resp.ID)
+		}
+		if got.Path != "/email-messages/em_abc123/preview" {
+			t.Errorf("Path = %q", got.Path)
+		}
+		if got.Method != http.MethodPost {
+			t.Errorf("Method = %q", got.Method)
+		}
+
+		var sent map[string]any
+		if err := json.Unmarshal(got.Body, &sent); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		emails, _ := sent["emails"].([]any)
+		if len(emails) != 2 {
+			t.Errorf("emails len = %d, want 2", len(emails))
+		}
+		cp, _ := sent["contactProperties"].(map[string]any)
+		if cp["firstName"] != "Pat" {
+			t.Errorf("contactProperties.firstName = %v", cp["firstName"])
+		}
+		dv, _ := sent["dataVariables"].(map[string]any)
+		if dv["orderId"] != "123" {
+			t.Errorf("dataVariables.orderId = %v", dv["orderId"])
+		}
+	})
+
+	t.Run("returns error on non-200 response", func(t *testing.T) {
+		serveJSON(t, http.StatusBadRequest, `{"success":false,"message":"bad"}`)
+		_, err := runEmailMessagesPreview(cfg(t), "em_abc123", loops.EmailMessagePreviewRequest{
+			Emails: []string{"a@b.com"},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestFetchLatestRevisionID(t *testing.T) {
 	t.Run("returns current contentRevisionId from GET", func(t *testing.T) {
 		body := `{
 			"success": true,
-			"emailMessageId": "em_abc123",
+			"id": "em_abc123",
 			"campaignId": "cmp_xyz789",
 			"subject": "Hello",
 			"previewText": "",

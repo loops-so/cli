@@ -183,13 +183,17 @@ var transactionalCreateCmd = &cobra.Command{
 	Short: "Create a transactional email with an empty draft",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
+		groupID, _ := cmd.Flags().GetString("transactional-group-id")
 
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		tx, err := runTransactionalCreate(cfg, loops.CreateTransactionalRequest{Name: name})
+		tx, err := runTransactionalCreate(cfg, loops.CreateTransactionalRequest{
+			Name:                 name,
+			TransactionalGroupID: groupID,
+		})
 		if err != nil {
 			return err
 		}
@@ -210,13 +214,17 @@ var transactionalUpdateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
+		groupID, _ := cmd.Flags().GetString("transactional-group-id")
 
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		tx, err := runTransactionalUpdate(cfg, args[0], loops.UpdateTransactionalRequest{Name: name})
+		tx, err := runTransactionalUpdate(cfg, args[0], loops.UpdateTransactionalRequest{
+			Name:                 name,
+			TransactionalGroupID: groupID,
+		})
 		if err != nil {
 			return err
 		}
@@ -286,6 +294,7 @@ func printTransactional(cmd *cobra.Command, tx *loops.Transactional) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("transactionalId", tx.ID)
 	t.Row("name", tx.Name)
+	t.Row("transactionalGroupId", deref(tx.TransactionalGroupID))
 	t.Row("draftEmailMessageId", deref(tx.DraftEmailMessageID))
 	t.Row("publishedEmailMessageId", deref(tx.PublishedEmailMessageID))
 	t.Row("dataVariables", strings.Join(tx.DataVariables, ", "))
@@ -370,10 +379,12 @@ func init() {
 	transactionalCmd.AddCommand(transactionalGetCmd)
 
 	transactionalCreateCmd.Flags().StringP("name", "n", "", "Transactional email name (required)")
+	transactionalCreateCmd.Flags().String("transactional-group-id", "", "Transactional group ID to assign this email to")
 	transactionalCreateCmd.MarkFlagRequired("name")
 	transactionalCmd.AddCommand(transactionalCreateCmd)
 
 	transactionalUpdateCmd.Flags().StringP("name", "n", "", "Transactional email name (required)")
+	transactionalUpdateCmd.Flags().String("transactional-group-id", "", "Move the email to this transactional group")
 	transactionalUpdateCmd.MarkFlagRequired("name")
 	transactionalCmd.AddCommand(transactionalUpdateCmd)
 
