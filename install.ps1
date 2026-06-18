@@ -83,3 +83,5 @@ Write-Host "Done!"
 Write-Host "✓ " -ForegroundColor Green -NoNewline
 Write-Host "Installed to $InstallDir\$BinName"
 & "$InstallDir\$BinName" --version
+Write-Host ""
+Write-Host 'Try `loops --help` to get started.' -ForegroundColor DarkGray

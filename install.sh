@@ -249,3 +249,5 @@ execute
 echo "Done!"
 printf '\033[32m✓\033[0m Installed to %s\n' "${INSTALL_DIR}/${SHORT_BIN_NAME}"
 "${INSTALL_DIR}/${SHORT_BIN_NAME}" --version
+echo ""
+printf '\033[2mTry `%s --help` to get started.\033[0m\n' "$SHORT_BIN_NAME"
