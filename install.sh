@@ -248,3 +248,4 @@ echo "Installing ${PROJ_NAME} $GH_RELEASE for $OS $ARCH... "
 execute
 echo "Done!"
 echo "Installed to ${INSTALL_DIR}/${SHORT_BIN_NAME}"
+"${INSTALL_DIR}/${SHORT_BIN_NAME}" --version

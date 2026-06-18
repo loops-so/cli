@@ -81,3 +81,4 @@ try {
 
 Write-Host "Done!"
 Write-Host "Installed to $InstallDir\$BinName"
+& "$InstallDir\$BinName" --version
