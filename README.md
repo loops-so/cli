@@ -26,7 +26,7 @@ brew install loops-so/tap/loops
 ### Script for macOS, Linux, Windows via WSL
 
 ```bash
-curl -fsSL https://cli.loops.so | bash
+curl -fsSL https://install.loops.so/cli | sh
 ```
 
 To install a specific version or to a custom path, append `-s -- <version> <path>` to `bash` in the command above. The default installation path is `~/.local/bin`.
