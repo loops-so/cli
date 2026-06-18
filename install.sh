@@ -244,8 +244,8 @@ execute() {
   rm -rf "$TMPDIR"
 }
 
-echo "Installing ${PROJ_NAME} $GH_RELEASE for $OS $ARCH... "
+printf "Installing %s %s for %s %s... " "$PROJ_NAME" "$GH_RELEASE" "$OS" "$ARCH"
 execute
 echo "Done!"
-echo "Installed to ${INSTALL_DIR}/${SHORT_BIN_NAME}"
+printf '\033[32m✓\033[0m Installed to %s\n' "${INSTALL_DIR}/${SHORT_BIN_NAME}"
 "${INSTALL_DIR}/${SHORT_BIN_NAME}" --version

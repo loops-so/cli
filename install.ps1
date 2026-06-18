@@ -50,7 +50,7 @@ $checksumsName = "${ProjName}_${versionNoV}_checksums.txt"
 $downloadUrl = "$GHAssetsUrl/$release/$archiveName"
 $checksumsUrl = "$GHAssetsUrl/$release/$checksumsName"
 
-Write-Host "Installing $ProjName $release for windows/$Arch..."
+Write-Host "Installing $ProjName $release for windows/$Arch... " -NoNewline
 
 $tmpDir = Join-Path $env:TEMP ([System.IO.Path]::GetRandomFileName())
 New-Item -ItemType Directory -Path $tmpDir | Out-Null
@@ -80,5 +80,6 @@ try {
 }
 
 Write-Host "Done!"
+Write-Host "✓ " -ForegroundColor Green -NoNewline
 Write-Host "Installed to $InstallDir\$BinName"
 & "$InstallDir\$BinName" --version
