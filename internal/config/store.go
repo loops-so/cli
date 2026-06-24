@@ -113,6 +113,24 @@ func ListKeys() ([]KeyEntry, error) {
 	return entries, nil
 }
 
+func Get(name string) (string, error) {
+	if name == "" {
+		return "", errors.New("a name is required")
+	}
+	pc, err := LoadPersistentConfig()
+	if err != nil {
+		return "", err
+	}
+	if !slices.Contains(pc.Teams, name) {
+		return "", fmt.Errorf("no key named %q — run `loops auth list` to see available keys", name)
+	}
+	key, err := keyring.Get(keyringService, "key:"+name)
+	if err != nil {
+		return "", fmt.Errorf("could not read key %q: %w", name, err)
+	}
+	return key, nil
+}
+
 func Delete(name string) error {
 	if name == "" {
 		return errors.New("a name is required — use --name to specify which key to remove")
