@@ -299,8 +299,8 @@ github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfn
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
-github.com/loops-so/loops-go v0.3.0 h1:E4hMTtr1BH0JF0/B3QKUMfMes+Czjh90toS5XpPiMZg=
-github.com/loops-so/loops-go v0.3.0/go.mod h1:BDzBhAn/4e2QSKXrpXufIpSuH8xUPv9oa+hazH01ejE=
+github.com/loops-so/loops-go v0.3.1 h1:fpkNQWRVj3oAOu+w2duUIvRtLrfiuMk4RBHqqCLa5M0=
+github.com/loops-so/loops-go v0.3.1/go.mod h1:BDzBhAn/4e2QSKXrpXufIpSuH8xUPv9oa+hazH01ejE=
 github.com/lucasb-eyer/go-colorful v1.3.0 h1:2/yBRLdWBZKrf7gB40FoiKfAWYQ0lqNcbuQwVHXptag=
 github.com/lucasb-eyer/go-colorful v1.3.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/lyft/protoc-gen-star v0.5.3/go.mod h1:V0xaHgaf5oCCqmcxYcWiDfTiKsZsRc87/1qhoTACD8w=
