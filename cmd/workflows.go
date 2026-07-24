@@ -29,7 +29,7 @@ func runWorkflowsGet(cfg *config.Config, id string) (*loops.SimplifiedWorkflow, 
 	return newAPIClient(cfg).GetWorkflow(id)
 }
 
-func runWorkflowsNodeGet(cfg *config.Config, workflowID, nodeID string) (*loops.WorkflowNode, error) {
+func runWorkflowsNodeGet(cfg *config.Config, workflowID, nodeID string) (*loops.WorkflowNodeWithRevision, error) {
 	return newAPIClient(cfg).GetWorkflowNode(workflowID, nodeID)
 }
 
@@ -161,7 +161,7 @@ var workflowsNodesGetCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), n)
 		}
 
-		return printWorkflowNode(cmd, n)
+		return printWorkflowNode(cmd, &n.WorkflowNode)
 	},
 }
 
@@ -261,6 +261,7 @@ func workflowNodeRows(n *loops.WorkflowNode) [][2]string {
 	case loops.WorkflowNodeTypeAddToListTrigger:
 		if v := n.AddToListTrigger; v != nil {
 			addCommon(v.ID, v.WorkflowID, v.NextNodeIDs)
+			add("mailingListId", deref(v.MailingListID))
 			add("reEligible", strconv.FormatBool(v.ReEligible))
 		}
 	case loops.WorkflowNodeTypeBlankTrigger:
@@ -282,6 +283,7 @@ func workflowNodeRows(n *loops.WorkflowNode) [][2]string {
 	case loops.WorkflowNodeTypeSendEmailAction:
 		if v := n.SendEmailAction; v != nil {
 			addCommon(v.ID, v.WorkflowID, v.NextNodeIDs)
+			add("emailMessageId", v.EmailMessageID)
 			add("subject", v.Subject)
 		}
 	case loops.WorkflowNodeTypeExitAction:
