@@ -442,6 +442,84 @@ var emailMessagesPreviewCmd = &cobra.Command{
 	},
 }
 
+func runEmailMessageGuardian(cfg *config.Config, id string) (*loops.EmailMessageGuardianResponse, error) {
+	return newAPIClient(cfg).GetEmailMessageGuardian(id)
+}
+
+var emailMessagesGuardianCmd = &cobra.Command{
+	Use:   "guardian <id>",
+	Short: "Run Guardian content validation on an email message",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		resp, err := runEmailMessageGuardian(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), resp)
+		}
+
+		return printGuardianResponse(cmd, resp)
+	},
+}
+
+func printGuardianResponse(cmd *cobra.Command, resp *loops.EmailMessageGuardianResponse) error {
+	out := cmd.OutOrStdout()
+	if len(resp.Errors) == 0 && len(resp.Warnings) == 0 {
+		fmt.Fprintln(out, "No guardian issues found.")
+		return nil
+	}
+
+	if err := printGuardianSection(cmd, "Errors", resp.Errors); err != nil {
+		return err
+	}
+	if len(resp.Errors) > 0 && len(resp.Warnings) > 0 {
+		fmt.Fprintln(out)
+	}
+	return printGuardianSection(cmd, "Warnings", resp.Warnings)
+}
+
+func printGuardianSection(cmd *cobra.Command, heading string, rules []loops.GuardianRule) error {
+	if len(rules) == 0 {
+		return nil
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%s:\n", heading)
+	t := newStyledTable(cmd.OutOrStdout(), "RULE", "TITLE", "DESCRIPTION", "ITEMS")
+	for _, r := range rules {
+		t.Row(r.Rule, r.Title, r.Description, formatGuardianItems(r.Items))
+	}
+	return t.Render()
+}
+
+// formatGuardianItems summarizes a rule's items as a count plus a short,
+// comma-separated list of item labels (falling back to codeName when a label
+// is empty). Returns "0" when there are no items.
+func formatGuardianItems(items []loops.GuardianRuleItem) string {
+	if len(items) == 0 {
+		return "0"
+	}
+	labels := make([]string, 0, len(items))
+	for _, item := range items {
+		label := item.Label
+		if label == "" {
+			label = item.CodeName
+		}
+		if label != "" {
+			labels = append(labels, label)
+		}
+	}
+	if len(labels) == 0 {
+		return fmt.Sprintf("%d", len(items))
+	}
+	return fmt.Sprintf("%d (%s)", len(items), strings.Join(labels, ", "))
+}
+
 func printLmxWarnings(cmd *cobra.Command, warnings []loops.LmxWarning) {
 	if len(warnings) == 0 {
 		return
@@ -459,6 +537,8 @@ func printLmxWarnings(cmd *cobra.Command, warnings []loops.LmxWarning) {
 
 func init() {
 	emailMessagesCmd.AddCommand(emailMessagesGetCmd)
+
+	emailMessagesCmd.AddCommand(emailMessagesGuardianCmd)
 
 	addEmailMessageFieldFlags(emailMessagesUpdateCmd)
 	emailMessagesUpdateCmd.Flags().StringP("expected-revision-id", "r", "", "Last-seen contentRevisionId. Get this from a prior 'email-messages get'. Mutually exclusive with --force.")
