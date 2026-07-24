@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/loops-so/cli/internal/config"
 	"github.com/loops-so/loops-go"
@@ -115,14 +117,90 @@ var audienceSegmentsGetCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), s)
 		}
 
-		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
-		t.Row("segmentId", s.ID)
-		t.Row("name", s.Name)
-		t.Row("description", deref(s.Description))
-		t.Row("filter", formatSegmentFilter(s.Filter))
-		t.Row("createdAt", s.CreatedAt)
-		t.Row("updatedAt", s.UpdatedAt)
-		return t.Render()
+		return printAudienceSegment(cmd, s)
+	},
+}
+
+func printAudienceSegment(cmd *cobra.Command, s *loops.AudienceSegment) error {
+	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
+	t.Row("segmentId", s.ID)
+	t.Row("name", s.Name)
+	t.Row("description", deref(s.Description))
+	t.Row("filter", formatSegmentFilter(s.Filter))
+	t.Row("createdAt", s.CreatedAt)
+	t.Row("updatedAt", s.UpdatedAt)
+	return t.Render()
+}
+
+func runAudienceSegmentsCreate(cfg *config.Config, req loops.CreateAudienceSegmentRequest) (*loops.AudienceSegment, error) {
+	return newAPIClient(cfg).CreateAudienceSegment(req)
+}
+
+// filterFromCmd resolves the audience filter from either the inline --filter
+// JSON string or the --filter-file path (exactly one, enforced as a flag
+// group). Selection is value-based so it stays correct when RunE is called
+// directly in tests, which bypasses cobra's flag-group validation.
+func filterFromCmd(cmd *cobra.Command) (loops.AudienceFilter, error) {
+	inline, _ := cmd.Flags().GetString("filter")
+	path, _ := cmd.Flags().GetString("filter-file")
+
+	var data []byte
+	src := "--filter"
+	switch {
+	case inline != "" && path != "":
+		return loops.AudienceFilter{}, fmt.Errorf("--filter and --filter-file are mutually exclusive")
+	case inline != "":
+		data = []byte(inline)
+	case path != "":
+		src = "--filter-file"
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return loops.AudienceFilter{}, fmt.Errorf("read --filter-file: %w", err)
+		}
+		data = b
+	default:
+		return loops.AudienceFilter{}, fmt.Errorf("one of --filter or --filter-file is required")
+	}
+
+	var filter loops.AudienceFilter
+	if err := json.Unmarshal(data, &filter); err != nil {
+		return loops.AudienceFilter{}, fmt.Errorf("parse %s: %w", src, err)
+	}
+	return filter, nil
+}
+
+var audienceSegmentsCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create an audience segment",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+		description, _ := cmd.Flags().GetString("description")
+
+		filter, err := filterFromCmd(cmd)
+		if err != nil {
+			return err
+		}
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		s, err := runAudienceSegmentsCreate(cfg, loops.CreateAudienceSegmentRequest{
+			Name:        name,
+			Description: description,
+			Filter:      filter,
+		})
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), s)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Created. (id: %s)\n\n", s.ID)
+		return printAudienceSegment(cmd, s)
 	},
 }
 
@@ -131,5 +209,15 @@ func init() {
 	addPickFlag(audienceSegmentsListCmd)
 	audienceSegmentsCmd.AddCommand(audienceSegmentsListCmd)
 	audienceSegmentsCmd.AddCommand(audienceSegmentsGetCmd)
+
+	audienceSegmentsCreateCmd.Flags().StringP("name", "n", "", "Segment name")
+	audienceSegmentsCreateCmd.Flags().String("description", "", "Segment description")
+	audienceSegmentsCreateCmd.Flags().String("filter", "", "Audience filter as an inline JSON string")
+	audienceSegmentsCreateCmd.Flags().String("filter-file", "", "Path to a JSON file with the audience filter")
+	audienceSegmentsCreateCmd.MarkFlagRequired("name")
+	audienceSegmentsCreateCmd.MarkFlagsMutuallyExclusive("filter", "filter-file")
+	audienceSegmentsCreateCmd.MarkFlagsOneRequired("filter", "filter-file")
+	audienceSegmentsCmd.AddCommand(audienceSegmentsCreateCmd)
+
 	rootCmd.AddCommand(audienceSegmentsCmd)
 }
