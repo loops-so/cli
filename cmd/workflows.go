@@ -488,7 +488,14 @@ func printChangeMailingListResponse(cmd *cobra.Command, r *loops.ChangeWorkflowM
 	t.Row("mailingListId", deref(r.MailingListID))
 	t.Row("workflowRevisionId", deref(r.WorkflowRevisionID))
 	t.Row("queuedContactCount", formatFloat(r.QueuedContactCount))
-	return t.Render()
+	if err := t.Render(); err != nil {
+		return err
+	}
+	if r.Workflow == nil {
+		return nil
+	}
+	fmt.Fprintln(cmd.OutOrStdout())
+	return printSimplifiedWorkflow(cmd, r.Workflow)
 }
 
 func printDeleteNodeResponse(cmd *cobra.Command, r *loops.DeleteWorkflowNodeResponse) error {
@@ -497,7 +504,14 @@ func printDeleteNodeResponse(cmd *cobra.Command, r *loops.DeleteWorkflowNodeResp
 	t.Row("nodeIds", strings.Join(r.NodeIDs, ", "))
 	t.Row("workflowRevisionId", deref(r.WorkflowRevisionID))
 	t.Row("queuedContactCount", formatFloat(r.QueuedContactCount))
-	return t.Render()
+	if err := t.Render(); err != nil {
+		return err
+	}
+	if r.Workflow == nil {
+		return nil
+	}
+	fmt.Fprintln(cmd.OutOrStdout())
+	return printSimplifiedWorkflow(cmd, r.Workflow)
 }
 
 var workflowsCreateCmd = &cobra.Command{
@@ -714,7 +728,11 @@ var workflowsNodesUpdateCmd = &cobra.Command{
 		t.Row("typeName", node.TypeName)
 		t.Row("nodeId", mutationNodeID(&node.WorkflowMutationNode))
 		t.Row("workflowRevisionId", node.WorkflowRevisionID)
-		return t.Render()
+		if err := t.Render(); err != nil {
+			return err
+		}
+		fmt.Fprintln(cmd.OutOrStdout())
+		return printSimplifiedWorkflow(cmd, &node.Workflow)
 	},
 }
 
