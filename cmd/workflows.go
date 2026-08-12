@@ -470,6 +470,10 @@ func runWorkflowsNodeAddBranch(cfg *config.Config, workflowID, nodeID string, re
 	return newAPIClient(cfg).AddWorkflowBranch(workflowID, nodeID, req)
 }
 
+func runWorkflowsNodeReroute(cfg *config.Config, workflowID, nodeID string, req loops.RerouteNodeConnectionRequest) (*loops.RerouteNodeConnectionResponse, error) {
+	return newAPIClient(cfg).RerouteNodeConnection(workflowID, nodeID, req)
+}
+
 func runWorkflowsNodeDelete(cfg *config.Config, workflowID, nodeID string, recursive bool, req loops.DeleteWorkflowNodeRequest) (*loops.DeleteWorkflowNodeResponse, error) {
 	client := newAPIClient(cfg)
 	if recursive {
@@ -740,6 +744,35 @@ var workflowsNodesAddBranchCmd = &cobra.Command{
 	},
 }
 
+var workflowsNodesRerouteCmd = &cobra.Command{
+	Use:   "reroute <workflow-id> <node-id>",
+	Short: "Reroute a node's outgoing connection to a new target",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		newTargetNodeID, _ := cmd.Flags().GetString("new-target-node-id")
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		resp, err := runWorkflowsNodeReroute(cfg, args[0], args[1], loops.RerouteNodeConnectionRequest{
+			ExpectedRevisionID: readExpectedRevisionID(cmd),
+			NewTargetNodeID:    newTargetNodeID,
+		})
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), resp)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Rerouted node. (revision: %s)\n\n", resp.WorkflowRevisionID)
+		return printSimplifiedWorkflow(cmd, &resp.Workflow)
+	},
+}
+
 var workflowsNodesDeleteCmd = &cobra.Command{
 	Use:   "delete <workflow-id> <node-id>",
 	Short: "Delete a workflow node",
@@ -873,6 +906,11 @@ func init() {
 
 	workflowsNodesAddBranchCmd.Flags().String("expected-revision-id", "", "Expected workflow revision ID (optimistic concurrency)")
 	workflowsNodesCmd.AddCommand(workflowsNodesAddBranchCmd)
+
+	workflowsNodesRerouteCmd.Flags().String("new-target-node-id", "", "Node ID that should receive the source node's outgoing connection")
+	workflowsNodesRerouteCmd.Flags().String("expected-revision-id", "", "Expected workflow revision ID (optimistic concurrency)")
+	workflowsNodesRerouteCmd.MarkFlagRequired("new-target-node-id")
+	workflowsNodesCmd.AddCommand(workflowsNodesRerouteCmd)
 
 	workflowsNodesDeleteCmd.Flags().Bool("recursive", false, "Also delete downstream nodes")
 	workflowsNodesDeleteCmd.Flags().String("expected-revision-id", "", "Expected workflow revision ID (optimistic concurrency)")
