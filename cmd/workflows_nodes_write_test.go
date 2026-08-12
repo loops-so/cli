@@ -8,7 +8,118 @@ import (
 	"testing"
 
 	"github.com/loops-so/loops-go"
+	"github.com/spf13/cobra"
 )
+
+// newCreateNodeFlagsCmd builds a command with the `workflows nodes create`
+// flags registered and set from the given map, for testing
+// parseCreateWorkflowNodeFlags in isolation.
+func newCreateNodeFlagsCmd(t *testing.T, flags map[string]string) *cobra.Command {
+	t.Helper()
+	c := &cobra.Command{}
+	for _, name := range []string{"node-type", "insert-mode", "from-node-id", "to-node-id", "before-node-id", "expected-revision-id"} {
+		c.Flags().String(name, "", "")
+	}
+	for k, v := range flags {
+		if err := c.Flags().Set(k, v); err != nil {
+			t.Fatalf("set --%s: %v", k, err)
+		}
+	}
+	return c
+}
+
+func TestParseCreateWorkflowNodeFlags(t *testing.T) {
+	t.Run("between sets from/to node ids", func(t *testing.T) {
+		req, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, map[string]string{
+			"node-type":    loops.CreateWorkflowNodeTypeTimerAction,
+			"insert-mode":  loops.WorkflowInsertModeBetween,
+			"from-node-id": "n1",
+			"to-node-id":   "n2",
+		}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.FromNodeID != "n1" || req.ToNodeID != "n2" {
+			t.Errorf("from/to = %q/%q, want n1/n2", req.FromNodeID, req.ToNodeID)
+		}
+		if req.BeforeNodeID != "" {
+			t.Errorf("BeforeNodeID = %q, want empty", req.BeforeNodeID)
+		}
+	})
+
+	t.Run("before maps before-node-id to ToNodeID (not BeforeNodeID)", func(t *testing.T) {
+		req, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, map[string]string{
+			"node-type":      loops.CreateWorkflowNodeTypeTimerAction,
+			"insert-mode":    loops.WorkflowInsertModeBefore,
+			"before-node-id": "n3",
+		}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.ToNodeID != "n3" {
+			t.Errorf("ToNodeID = %q, want n3", req.ToNodeID)
+		}
+		if req.BeforeNodeID != "" {
+			t.Errorf("BeforeNodeID = %q, want empty (deprecated field must not be sent)", req.BeforeNodeID)
+		}
+		if req.FromNodeID != "" {
+			t.Errorf("FromNodeID = %q, want empty", req.FromNodeID)
+		}
+	})
+
+	t.Run("after sets FromNodeID", func(t *testing.T) {
+		req, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, map[string]string{
+			"node-type":    loops.CreateWorkflowNodeTypeTimerAction,
+			"insert-mode":  loops.WorkflowInsertModeAfter,
+			"from-node-id": "n1",
+		}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.InsertMode != loops.WorkflowInsertModeAfter {
+			t.Errorf("InsertMode = %q, want after", req.InsertMode)
+		}
+		if req.FromNodeID != "n1" {
+			t.Errorf("FromNodeID = %q, want n1", req.FromNodeID)
+		}
+		if req.ToNodeID != "" || req.BeforeNodeID != "" {
+			t.Errorf("to/before = %q/%q, want empty", req.ToNodeID, req.BeforeNodeID)
+		}
+	})
+
+	t.Run("expected-revision-id is passed through when set", func(t *testing.T) {
+		req, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, map[string]string{
+			"node-type":            loops.CreateWorkflowNodeTypeTimerAction,
+			"insert-mode":          loops.WorkflowInsertModeAfter,
+			"from-node-id":         "n1",
+			"expected-revision-id": "rev_1",
+		}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.ExpectedRevisionID == nil || *req.ExpectedRevisionID != "rev_1" {
+			t.Errorf("ExpectedRevisionID = %v, want rev_1", req.ExpectedRevisionID)
+		}
+	})
+
+	errCases := []struct {
+		name  string
+		flags map[string]string
+	}{
+		{"unknown node-type", map[string]string{"node-type": "Nonsense", "insert-mode": loops.WorkflowInsertModeAfter, "from-node-id": "n1"}},
+		{"unknown insert-mode", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": "sideways", "from-node-id": "n1"}},
+		{"between missing to", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": loops.WorkflowInsertModeBetween, "from-node-id": "n1"}},
+		{"before missing before-node-id", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": loops.WorkflowInsertModeBefore}},
+		{"after missing from-node-id", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": loops.WorkflowInsertModeAfter}},
+	}
+	for _, tc := range errCases {
+		t.Run(tc.name+" is an error", func(t *testing.T) {
+			if _, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, tc.flags)); err == nil {
+				t.Error("expected error, got nil")
+			}
+		})
+	}
+}
 
 func TestRunWorkflowsNodeCreate(t *testing.T) {
 	body := `{
@@ -253,6 +364,61 @@ func TestRunWorkflowsNodeAddBranch(t *testing.T) {
 		}
 		if cap.Path != "/workflows/wf_1/nodes/node_b/add-branch" {
 			t.Errorf("Path = %q, want .../add-branch", cap.Path)
+		}
+	})
+}
+
+func TestRunWorkflowsNodeReroute(t *testing.T) {
+	body := `{
+		"typeName": "TimerAction",
+		"id": "node_r",
+		"nextNodeIds": ["n2"],
+		"amount": 0,
+		"unit": "m",
+		"workflowRevisionId": "rev_8",
+		"workflow": {
+			"id": "wf_1",
+			"name": "WF",
+			"status": "Draft",
+			"workflowRevisionId": "rev_8",
+			"mailingListId": null,
+			"rootNodeId": null,
+			"nodes": {}
+		}
+	}`
+
+	t.Run("posts to reroute path with new target and revision", func(t *testing.T) {
+		cap := serveJSONCapture(t, http.StatusOK, body)
+		rev := "rev_7"
+		resp, err := runWorkflowsNodeReroute(cfg(t), "wf_1", "node_r", loops.RerouteNodeConnectionRequest{
+			ExpectedRevisionID: &rev,
+			NewTargetNodeID:    "node_new",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.WorkflowRevisionID != "rev_8" {
+			t.Errorf("WorkflowRevisionID = %q, want rev_8", resp.WorkflowRevisionID)
+		}
+		if resp.Workflow.ID != "wf_1" {
+			t.Errorf("Workflow.ID = %q, want wf_1", resp.Workflow.ID)
+		}
+		if cap.Method != http.MethodPost {
+			t.Errorf("Method = %q, want POST", cap.Method)
+		}
+		if cap.Path != "/workflows/wf_1/nodes/node_r/reroute" {
+			t.Errorf("Path = %q, want /workflows/wf_1/nodes/node_r/reroute", cap.Path)
+		}
+
+		var sent map[string]any
+		if err := json.Unmarshal(cap.Body, &sent); err != nil {
+			t.Fatalf("decode body: %v\nraw: %s", err, cap.Body)
+		}
+		if sent["newTargetNodeId"] != "node_new" {
+			t.Errorf("newTargetNodeId = %v, want node_new", sent["newTargetNodeId"])
+		}
+		if sent["expectedRevisionId"] != "rev_7" {
+			t.Errorf("expectedRevisionId = %v, want rev_7", sent["expectedRevisionId"])
 		}
 	})
 }
