@@ -54,7 +54,7 @@ func addEmailMessageFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().String("reply-to", "", "Reply-to email address")
 	cmd.Flags().String("cc", "", "CC email address")
 	cmd.Flags().String("bcc", "", "BCC email address")
-	cmd.Flags().String("language-code", "", "Language/locale code (e.g. en-US)")
+	cmd.Flags().String("language-code", "", "Language code, ISO 639-1 (e.g. en, fr)")
 	cmd.Flags().String("email-format", "", `"styled" or "plain"`)
 	cmd.Flags().String("lmx", "", "LMX markup (inline)")
 	cmd.Flags().String("lmx-file", "", "Path to a file containing LMX markup")

@@ -173,7 +173,7 @@ func TestEmailMessageFieldParamsFromCmd(t *testing.T) {
 		cmd.ParseFlags([]string{
 			"--cc", "cc@acme.com",
 			"--bcc", "bcc@acme.com",
-			"--language-code", "en-US",
+			"--language-code", "en",
 		})
 		params, err := emailMessageFieldParamsFromCmd(cmd)
 		if err != nil {
@@ -185,7 +185,7 @@ func TestEmailMessageFieldParamsFromCmd(t *testing.T) {
 		if params.BCCEmail != "bcc@acme.com" {
 			t.Errorf("BCCEmail = %q", params.BCCEmail)
 		}
-		if params.LanguageCode != "en-US" {
+		if params.LanguageCode != "en" {
 			t.Errorf("LanguageCode = %q", params.LanguageCode)
 		}
 		for _, k := range []string{"ccEmail", "bccEmail", "languageCode"} {
