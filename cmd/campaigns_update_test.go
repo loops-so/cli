@@ -67,6 +67,29 @@ func TestRunCampaignsUpdate(t *testing.T) {
 		}
 	})
 
+	t.Run("cleared audienceFilter sends JSON null on the wire", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, body)
+		_, err := runCampaignsUpdate(cfg(t), "cmp_abc123", loops.UpdateCampaignRequest{
+			AudienceFilter: nil,
+			Set:            map[string]bool{"audienceFilter": true},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var sent map[string]any
+		if err := json.Unmarshal(got.Body, &sent); err != nil {
+			t.Fatalf("decode request body: %v\nraw: %s", err, got.Body)
+		}
+		v, ok := sent["audienceFilter"]
+		if !ok {
+			t.Fatalf("audienceFilter missing from request body: %v", sent)
+		}
+		if v != nil {
+			t.Errorf("audienceFilter = %v, want nil (JSON null)", v)
+		}
+	})
+
 	t.Run("Set map controls which fields are sent", func(t *testing.T) {
 		got := serveJSONCapture(t, http.StatusOK, body)
 		ts := "2026-07-01T12:00:00Z"

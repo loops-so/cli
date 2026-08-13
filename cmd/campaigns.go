@@ -53,10 +53,11 @@ func addCampaignFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().String("campaign-group-id", "", "Campaign group ID")
 	cmd.Flags().String("mailing-list-id", "", `Mailing list ID to target. Pass "null" to clear.`)
 	cmd.Flags().String("audience-segment-id", "", `Audience segment ID to target. Pass "null" to clear.`)
-	cmd.Flags().String("audience-filter-file", "", `Path to a JSON file with an ad-hoc audience filter. Pass "null" to clear.`)
+	cmd.Flags().String("audience-filter", "", `Inline JSON string with an ad-hoc audience filter. Pass "null" to clear.`)
+	cmd.Flags().String("audience-filter-file", "", "Path to a JSON file with an ad-hoc audience filter")
 	cmd.Flags().Bool("schedule-now", false, "Send immediately when published")
 	cmd.Flags().String("schedule-at", "", "Send at the given ISO 8601 timestamp (e.g. 2026-07-01T12:00:00Z)")
-	cmd.MarkFlagsMutuallyExclusive("audience-segment-id", "audience-filter-file")
+	cmd.MarkFlagsMutuallyExclusive("audience-segment-id", "audience-filter", "audience-filter-file")
 	cmd.MarkFlagsMutuallyExclusive("schedule-now", "schedule-at")
 }
 
@@ -74,6 +75,56 @@ func readNullableFlag(cmd *cobra.Command, flagName string) (*string, bool, error
 		return nil, true, nil
 	}
 	return &v, true, nil
+}
+
+// resolveAudienceFilter reads the ad-hoc audience filter from either the inline
+// --audience-filter JSON string or the --audience-filter-file path and returns
+// (filterOrNil, set, err). At most one flag may be provided; the mutual
+// exclusion is also checked here (not just via cobra's flag group) so it holds
+// when RunE is invoked directly in tests.
+//
+// Only --audience-filter accepts the "null" sentinel to clear the field,
+// encoded as a nil filter with set=true. --audience-filter-file always names a
+// file, so a non-file value simply fails the read.
+func resolveAudienceFilter(cmd *cobra.Command) (*loops.AudienceFilter, bool, error) {
+	inlineSet := cmd.Flags().Changed("audience-filter")
+	fileSet := cmd.Flags().Changed("audience-filter-file")
+	switch {
+	case !inlineSet && !fileSet:
+		return nil, false, nil
+	case inlineSet && fileSet:
+		return nil, false, fmt.Errorf("--audience-filter and --audience-filter-file are mutually exclusive")
+	}
+
+	src := "--audience-filter"
+	var data []byte
+	if inlineSet {
+		v, _ := cmd.Flags().GetString("audience-filter")
+		if v == "" {
+			return nil, false, fmt.Errorf(`--audience-filter requires a value; pass "null" to clear`)
+		}
+		if v == nullSentinel {
+			return nil, true, nil
+		}
+		data = []byte(v)
+	} else {
+		src = "--audience-filter-file"
+		path, _ := cmd.Flags().GetString("audience-filter-file")
+		if path == "" {
+			return nil, false, fmt.Errorf("--audience-filter-file requires a file path")
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return nil, false, fmt.Errorf("read --audience-filter-file: %w", err)
+		}
+		data = b
+	}
+
+	var f loops.AudienceFilter
+	if err := json.Unmarshal(data, &f); err != nil {
+		return nil, false, fmt.Errorf("parse %s: %w", src, err)
+	}
+	return &f, true, nil
 }
 
 func campaignFieldParamsFromCmd(cmd *cobra.Command) (campaignFieldParams, error) {
@@ -99,26 +150,11 @@ func campaignFieldParamsFromCmd(cmd *cobra.Command) (campaignFieldParams, error)
 		p.AudienceSegmentID = v
 		p.Set["audienceSegmentId"] = true
 	}
-	if cmd.Flags().Changed("audience-filter-file") {
-		path, _ := cmd.Flags().GetString("audience-filter-file")
-		if path == "" {
-			return p, fmt.Errorf(`--audience-filter-file requires a value; pass "null" to clear`)
-		}
-		if path == nullSentinel {
-			p.AudienceFilter = nil
-			p.Set["audienceFilter"] = true
-		} else {
-			data, err := os.ReadFile(path)
-			if err != nil {
-				return p, fmt.Errorf("read --audience-filter-file: %w", err)
-			}
-			var f loops.AudienceFilter
-			if err := json.Unmarshal(data, &f); err != nil {
-				return p, fmt.Errorf("parse --audience-filter-file: %w", err)
-			}
-			p.AudienceFilter = &f
-			p.Set["audienceFilter"] = true
-		}
+	if f, set, err := resolveAudienceFilter(cmd); err != nil {
+		return p, err
+	} else if set {
+		p.AudienceFilter = f
+		p.Set["audienceFilter"] = true
 	}
 	if cmd.Flags().Changed("schedule-now") {
 		p.Scheduling = &loops.CampaignSchedulingRequest{Method: loops.CampaignSchedulingMethodNow}
@@ -352,6 +388,7 @@ func init() {
 		"campaign-group-id",
 		"mailing-list-id",
 		"audience-segment-id",
+		"audience-filter",
 		"audience-filter-file",
 		"schedule-now",
 		"schedule-at",
