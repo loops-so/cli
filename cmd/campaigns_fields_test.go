@@ -226,6 +226,9 @@ func TestCampaignFieldParamsFromCmd(t *testing.T) {
 		if err := cmd.ParseFlags([]string{"--audience-filter", "{}", "--audience-filter-file", "f.json"}); err != nil {
 			t.Fatalf("ParseFlags: %v", err)
 		}
+		if err := cmd.ValidateFlagGroups(); err == nil {
+			t.Error("ValidateFlagGroups: expected mutual-exclusion error, got nil")
+		}
 		_, err := campaignFieldParamsFromCmd(cmd)
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -242,6 +245,30 @@ func TestCampaignFieldParamsFromCmd(t *testing.T) {
 		}
 		if _, err := campaignFieldParamsFromCmd(cmd); err == nil {
 			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("audience-segment-id and audience-filter together set both fields", func(t *testing.T) {
+		cmd := newCampaignFieldCmd()
+		filter := `{"match":"all","conditions":[{"type":"property","key":"plan","operator":"equals","value":"pro"}]}`
+		if err := cmd.ParseFlags([]string{"--audience-segment-id", "seg_1", "--audience-filter", filter}); err != nil {
+			t.Fatalf("ParseFlags: %v", err)
+		}
+		if err := cmd.ValidateFlagGroups(); err != nil {
+			t.Fatalf("ValidateFlagGroups: %v", err)
+		}
+		p, err := campaignFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.AudienceSegmentID == nil || *p.AudienceSegmentID != "seg_1" {
+			t.Errorf("AudienceSegmentID = %v, want pointer to seg_1", p.AudienceSegmentID)
+		}
+		if p.AudienceFilter == nil || p.AudienceFilter.Match != "all" {
+			t.Errorf("AudienceFilter = %v, want match=all filter", p.AudienceFilter)
+		}
+		if !p.Set["audienceSegmentId"] || !p.Set["audienceFilter"] {
+			t.Errorf("Set = %v, want both audienceSegmentId and audienceFilter", p.Set)
 		}
 	})
 

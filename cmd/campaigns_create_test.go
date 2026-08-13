@@ -83,4 +83,40 @@ func TestRunCampaignsCreate(t *testing.T) {
 			t.Errorf("scheduling = %v", sched)
 		}
 	})
+
+	t.Run("sends audience segment and filter together", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusCreated, body)
+		segment := "seg_1"
+		_, err := runCampaignsCreate(cfg(t), loops.CreateCampaignRequest{
+			Name:              "Spring",
+			AudienceSegmentID: &segment,
+			AudienceFilter: &loops.AudienceFilter{
+				Match: "all",
+				Conditions: []loops.AudienceFilterCondition{
+					{
+						Type:     loops.AudienceConditionTypeProperty,
+						Property: &loops.PropertyCondition{Key: "plan", Operator: "equals"},
+					},
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var sent map[string]any
+		if err := json.Unmarshal(got.Body, &sent); err != nil {
+			t.Fatalf("decode request body: %v\nraw: %s", err, got.Body)
+		}
+		if sent["audienceSegmentId"] != "seg_1" {
+			t.Errorf("audienceSegmentId = %v, want seg_1", sent["audienceSegmentId"])
+		}
+		filter, ok := sent["audienceFilter"].(map[string]any)
+		if !ok {
+			t.Fatalf("audienceFilter not an object: %v", sent["audienceFilter"])
+		}
+		if filter["match"] != "all" {
+			t.Errorf("audienceFilter.match = %v, want all", filter["match"])
+		}
+	})
 }

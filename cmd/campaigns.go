@@ -57,7 +57,7 @@ func addCampaignFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().String("audience-filter-file", "", "Path to a JSON file with an ad-hoc audience filter")
 	cmd.Flags().Bool("schedule-now", false, "Send immediately when published")
 	cmd.Flags().String("schedule-at", "", "Send at the given ISO 8601 timestamp (e.g. 2026-07-01T12:00:00Z)")
-	cmd.MarkFlagsMutuallyExclusive("audience-segment-id", "audience-filter", "audience-filter-file")
+	cmd.MarkFlagsMutuallyExclusive("audience-filter", "audience-filter-file")
 	cmd.MarkFlagsMutuallyExclusive("schedule-now", "schedule-at")
 }
 
