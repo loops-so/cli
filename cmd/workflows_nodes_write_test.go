@@ -47,7 +47,27 @@ func TestParseCreateWorkflowNodeFlags(t *testing.T) {
 		}
 	})
 
-	t.Run("before maps before-node-id to ToNodeID (not BeforeNodeID)", func(t *testing.T) {
+	t.Run("before maps to-node-id to ToNodeID (not BeforeNodeID)", func(t *testing.T) {
+		req, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, map[string]string{
+			"node-type":   loops.CreateWorkflowNodeTypeTimerAction,
+			"insert-mode": loops.WorkflowInsertModeBefore,
+			"to-node-id":  "n3",
+		}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.ToNodeID != "n3" {
+			t.Errorf("ToNodeID = %q, want n3", req.ToNodeID)
+		}
+		if req.BeforeNodeID != "" {
+			t.Errorf("BeforeNodeID = %q, want empty (deprecated field must not be sent)", req.BeforeNodeID)
+		}
+		if req.FromNodeID != "" {
+			t.Errorf("FromNodeID = %q, want empty", req.FromNodeID)
+		}
+	})
+
+	t.Run("before accepts deprecated before-node-id alias as ToNodeID", func(t *testing.T) {
 		req, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, map[string]string{
 			"node-type":      loops.CreateWorkflowNodeTypeTimerAction,
 			"insert-mode":    loops.WorkflowInsertModeBefore,
@@ -62,8 +82,20 @@ func TestParseCreateWorkflowNodeFlags(t *testing.T) {
 		if req.BeforeNodeID != "" {
 			t.Errorf("BeforeNodeID = %q, want empty (deprecated field must not be sent)", req.BeforeNodeID)
 		}
-		if req.FromNodeID != "" {
-			t.Errorf("FromNodeID = %q, want empty", req.FromNodeID)
+	})
+
+	t.Run("before prefers to-node-id over deprecated before-node-id", func(t *testing.T) {
+		req, err := parseCreateWorkflowNodeFlags(newCreateNodeFlagsCmd(t, map[string]string{
+			"node-type":      loops.CreateWorkflowNodeTypeTimerAction,
+			"insert-mode":    loops.WorkflowInsertModeBefore,
+			"to-node-id":     "n_new",
+			"before-node-id": "n_old",
+		}))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.ToNodeID != "n_new" {
+			t.Errorf("ToNodeID = %q, want n_new", req.ToNodeID)
 		}
 	})
 
@@ -109,7 +141,7 @@ func TestParseCreateWorkflowNodeFlags(t *testing.T) {
 		{"unknown node-type", map[string]string{"node-type": "Nonsense", "insert-mode": loops.WorkflowInsertModeAfter, "from-node-id": "n1"}},
 		{"unknown insert-mode", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": "sideways", "from-node-id": "n1"}},
 		{"between missing to", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": loops.WorkflowInsertModeBetween, "from-node-id": "n1"}},
-		{"before missing before-node-id", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": loops.WorkflowInsertModeBefore}},
+		{"before missing to-node-id", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": loops.WorkflowInsertModeBefore}},
 		{"after missing from-node-id", map[string]string{"node-type": loops.CreateWorkflowNodeTypeTimerAction, "insert-mode": loops.WorkflowInsertModeAfter}},
 	}
 	for _, tc := range errCases {

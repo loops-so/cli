@@ -622,9 +622,8 @@ var workflowsChangeMailingListCmd = &cobra.Command{
 // parseCreateWorkflowNodeFlags reads and validates the `workflows nodes create`
 // flags and builds a CreateWorkflowNodeRequest. Placement depends on insert
 // mode: "between" needs --from-node-id and --to-node-id; "before" inserts
-// before --before-node-id; "after" inserts after --from-node-id (valid only
-// when that node has exactly one outgoing connection). "before" is sent as
-// toNodeId because the API's beforeNodeId field is deprecated.
+// before --to-node-id; "after" inserts after --from-node-id (valid only when
+// that node has exactly one outgoing connection).
 func parseCreateWorkflowNodeFlags(cmd *cobra.Command) (loops.CreateWorkflowNodeRequest, error) {
 	nodeType, _ := cmd.Flags().GetString("node-type")
 	insertMode, _ := cmd.Flags().GetString("insert-mode")
@@ -650,10 +649,14 @@ func parseCreateWorkflowNodeFlags(cmd *cobra.Command) (loops.CreateWorkflowNodeR
 		req.FromNodeID = fromNodeID
 		req.ToNodeID = toNodeID
 	case loops.WorkflowInsertModeBefore:
-		if beforeNodeID == "" {
-			return loops.CreateWorkflowNodeRequest{}, fmt.Errorf("--insert-mode before requires --before-node-id")
+		target := toNodeID
+		if target == "" {
+			target = beforeNodeID
 		}
-		req.ToNodeID = beforeNodeID
+		if target == "" {
+			return loops.CreateWorkflowNodeRequest{}, fmt.Errorf("--insert-mode before requires --to-node-id")
+		}
+		req.ToNodeID = target
 	case loops.WorkflowInsertModeAfter:
 		if fromNodeID == "" {
 			return loops.CreateWorkflowNodeRequest{}, fmt.Errorf("--insert-mode after requires --from-node-id")
@@ -910,8 +913,9 @@ func init() {
 	workflowsNodesCreateCmd.Flags().String("node-type", "", fmt.Sprintf("Node type: %s", strings.Join(createWorkflowNodeTypes, ", ")))
 	workflowsNodesCreateCmd.Flags().String("insert-mode", "", "Insert mode: between, before, or after")
 	workflowsNodesCreateCmd.Flags().String("from-node-id", "", "Source node ID (insert-mode between or after)")
-	workflowsNodesCreateCmd.Flags().String("to-node-id", "", "Target node ID (insert-mode between)")
+	workflowsNodesCreateCmd.Flags().String("to-node-id", "", "Target node ID (insert-mode between or before)")
 	workflowsNodesCreateCmd.Flags().String("before-node-id", "", "Node ID to insert before (insert-mode before)")
+	workflowsNodesCreateCmd.Flags().MarkDeprecated("before-node-id", "use --to-node-id instead")
 	workflowsNodesCreateCmd.Flags().String("expected-revision-id", "", "Expected workflow revision ID (optimistic concurrency)")
 	workflowsNodesCreateCmd.MarkFlagRequired("node-type")
 	workflowsNodesCreateCmd.MarkFlagRequired("insert-mode")
