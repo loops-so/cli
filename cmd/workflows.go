@@ -117,6 +117,7 @@ var workflowsGetCmd = &cobra.Command{
 func printSimplifiedWorkflow(cmd *cobra.Command, w *loops.SimplifiedWorkflow) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("workflowId", w.ID)
+	t.Row("url", w.URL)
 	t.Row("name", w.Name)
 	t.Row("description", w.Description)
 	t.Row("emoji", w.Emoji)
