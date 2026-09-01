@@ -3,6 +3,8 @@ package cmd
 import (
 	"runtime/debug"
 	"strings"
+
+	"github.com/loops-so/loops-go"
 )
 
 var (
@@ -48,6 +50,7 @@ func init() {
 	if sdkVersion != "" {
 		parts = append(parts, "sdk "+sdkVersion)
 	}
+	parts = append(parts, "spec "+loops.SpecVersion)
 	suffix := ""
 	if len(parts) > 0 {
 		suffix = " (" + strings.Join(parts, ", ") + ")"
