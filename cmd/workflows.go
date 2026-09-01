@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -117,6 +118,7 @@ var workflowsGetCmd = &cobra.Command{
 func printSimplifiedWorkflow(cmd *cobra.Command, w *loops.SimplifiedWorkflow) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("workflowId", w.ID)
+	t.Row("url", w.URL)
 	t.Row("name", w.Name)
 	t.Row("description", w.Description)
 	t.Row("emoji", w.Emoji)
@@ -456,6 +458,10 @@ func runWorkflowsUpdate(cfg *config.Config, id string, req loops.UpdateWorkflowP
 
 func runWorkflowsChangeMailingList(cfg *config.Config, id string, req loops.ChangeWorkflowMailingListRequest) (*loops.ChangeWorkflowMailingListResponse, error) {
 	return newAPIClient(cfg).ChangeWorkflowMailingList(id, req)
+}
+
+func runWorkflowsDelete(cfg *config.Config, id string, req loops.DeleteWorkflowRequest) error {
+	return newAPIClient(cfg).DeleteWorkflow(id, req)
 }
 
 func runWorkflowsNodeCreate(cfg *config.Config, id string, req loops.CreateWorkflowNodeRequest) (*loops.CreateWorkflowNodeResponse, error) {
@@ -828,6 +834,48 @@ var workflowsNodesDeleteCmd = &cobra.Command{
 	},
 }
 
+// apiConfirmSentence is the trailing sentence the API adds to a
+// confirmation-required delete error. It is replaced with CLI guidance.
+const apiConfirmSentence = "Confirm deletion by sending a second request with confirmDelete: true."
+
+var workflowsDeleteCmd = &cobra.Command{
+	Use:   "delete <id>",
+	Short: "Delete a workflow",
+	Long: "Deletes a workflow. A workflow that is sending or has queued contacts is not deleted on the first\n" +
+		"attempt; re-run with --confirm to delete it, stop sending, and cancel its queued contacts.",
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		confirm, _ := cmd.Flags().GetBool("confirm")
+		err = runWorkflowsDelete(cfg, args[0], loops.DeleteWorkflowRequest{
+			ExpectedRevisionID: readExpectedRevisionID(cmd),
+			ConfirmDelete:      confirm,
+		})
+		if errors.Is(err, loops.ErrWorkflowDeleteConfirmationRequired) {
+			var apiErr *loops.APIError
+			msg := err.Error()
+			if errors.As(err, &apiErr) {
+				msg = apiErr.Message
+			}
+			msg = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(msg), apiConfirmSentence))
+			return fmt.Errorf("%s Re-run with --confirm to delete it anyway", msg)
+		}
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), Result{Success: true})
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), "Deleted.")
+		return nil
+	},
+}
+
 // mutationNodeID returns the ID of the active variant of a WorkflowMutationNode.
 func mutationNodeID(n *loops.WorkflowMutationNode) string {
 	switch n.TypeName {
@@ -894,6 +942,10 @@ func init() {
 	workflowsCreateCmd.Flags().String("mailing-list-id", "", `Mailing list ID. Pass "null" to clear.`)
 	workflowsCreateCmd.MarkFlagRequired("name")
 	workflowsCmd.AddCommand(workflowsCreateCmd)
+
+	workflowsDeleteCmd.Flags().String("expected-revision-id", "", "Expected workflow revision ID (optimistic concurrency)")
+	workflowsDeleteCmd.Flags().Bool("confirm", false, "Confirm deletion of a workflow that is sending or has queued contacts")
+	workflowsCmd.AddCommand(workflowsDeleteCmd)
 
 	workflowsUpdateCmd.Flags().StringP("name", "n", "", "Workflow name")
 	workflowsUpdateCmd.Flags().StringP("description", "d", "", "Workflow description")

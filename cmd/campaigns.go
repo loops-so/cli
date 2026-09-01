@@ -359,6 +359,7 @@ var campaignsGetCmd = &cobra.Command{
 func printCampaign(cmd *cobra.Command, c *loops.Campaign) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("campaignId", c.ID)
+	t.Row("url", c.URL)
 	t.Row("emailMessageId", deref(c.EmailMessageID))
 	t.Row("name", c.Name)
 	t.Row("status", c.Status)

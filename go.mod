@@ -1,6 +1,6 @@
 module github.com/loops-so/cli
 
-go 1.26.5
+go 1.26.7
 
 require (
 	charm.land/fang/v2 v2.0.1
@@ -9,7 +9,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/colorprofile v0.4.2
 	github.com/charmbracelet/x/term v0.2.2
-	github.com/loops-so/loops-go v0.5.0
+	github.com/loops-so/loops-go v0.6.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/zalando/go-keyring v0.2.6

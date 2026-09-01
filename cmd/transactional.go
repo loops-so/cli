@@ -293,6 +293,7 @@ var transactionalPublishCmd = &cobra.Command{
 func printTransactional(cmd *cobra.Command, tx *loops.Transactional) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("transactionalId", tx.ID)
+	t.Row("url", tx.URL)
 	t.Row("name", tx.Name)
 	t.Row("transactionalGroupId", deref(tx.TransactionalGroupID))
 	t.Row("draftEmailMessageId", deref(tx.DraftEmailMessageID))
