@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
