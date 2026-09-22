@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/loops-so/loops-go"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -12,15 +13,6 @@ var (
 	commit     = "none"
 	sdkVersion = ""
 )
-
-// includes a leading newline to make it easy to read the ascii art here in the source
-const versionHeader = `
-    __    ____  ____  ____  _____
-   / /   / __ \/ __ \/ __ \/ ___/
-  / /   / / / / / / / /_/ /\__ \
- / /___/ /_/ / /_/ / ____/___/ /
-/_____/\____/\____/_/    /____/
-`
 
 func init() {
 	if info, ok := debug.ReadBuildInfo(); ok {
@@ -42,7 +34,6 @@ func init() {
 			}
 		}
 	}
-	header := strings.TrimPrefix(versionHeader, "\n")
 	parts := []string{}
 	if commit != "" && commit != "none" {
 		parts = append(parts, "git "+commit)
@@ -55,5 +46,6 @@ func init() {
 	if len(parts) > 0 {
 		suffix = " (" + strings.Join(parts, ", ") + ")"
 	}
-	rootCmd.SetVersionTemplate(header + "\n{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}" + suffix + "\n")
+	cobra.AddTemplateFunc("versionArt", versionArt)
+	rootCmd.SetVersionTemplate("{{versionArt}}\n{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}" + suffix + "\n")
 }
