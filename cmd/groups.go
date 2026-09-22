@@ -13,13 +13,13 @@ import (
 // Both group types share the same Group/CreateGroupRequest/UpdateGroupRequest
 // shapes, so the command tree is built once and dispatched twice.
 type groupCmdSet struct {
-	use         string // top-level command name, e.g. "campaign-groups"
-	idLabel     string // table label for the id, e.g. "campaignGroupId"
-	singular    string // for help text, e.g. "campaign group"
-	runList     func(*config.Config, loops.PaginationParams) ([]loops.Group, error)
-	runGet      func(*config.Config, string) (*loops.Group, error)
-	runCreate   func(*config.Config, loops.CreateGroupRequest) (*loops.Group, error)
-	runUpdate   func(*config.Config, string, loops.UpdateGroupRequest) (*loops.Group, error)
+	use       string // top-level command name, e.g. "campaign-groups"
+	idLabel   string // table label for the id, e.g. "campaignGroupId"
+	singular  string // for help text, e.g. "campaign group"
+	runList   func(*config.Config, loops.PaginationParams) ([]loops.Group, error)
+	runGet    func(*config.Config, string) (*loops.Group, error)
+	runCreate func(*config.Config, loops.CreateGroupRequest) (*loops.Group, error)
+	runUpdate func(*config.Config, string, loops.UpdateGroupRequest) (*loops.Group, error)
 }
 
 // --- SDK method wrappers (one per resource × verb).

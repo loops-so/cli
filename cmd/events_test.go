@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/cmdutil"
+	"github.com/loops-so/loops-go"
 	"github.com/zalando/go-keyring"
 )
 
