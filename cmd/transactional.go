@@ -170,11 +170,34 @@ var transactionalGetCmd = &cobra.Command{
 			return err
 		}
 
+		if isWeb(cmd) {
+			return openResource(cmd, "transactional email", args[0], tx.URL)
+		}
+
 		if isJSONOutput() {
 			return printJSON(cmd.OutOrStdout(), tx)
 		}
 
 		return printTransactional(cmd, tx)
+	},
+}
+
+var transactionalViewCmd = &cobra.Command{
+	Use:   "view <id>",
+	Short: "Open a transactional email in the Loops web app",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		tx, err := runTransactionalGet(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		return openResource(cmd, "transactional email", args[0], tx.URL)
 	},
 }
 
@@ -377,7 +400,9 @@ func init() {
 	addPickFlag(transactionalListCmd)
 	transactionalCmd.AddCommand(transactionalListCmd)
 
+	addWebFlag(transactionalGetCmd)
 	transactionalCmd.AddCommand(transactionalGetCmd)
+	transactionalCmd.AddCommand(transactionalViewCmd)
 
 	transactionalCreateCmd.Flags().StringP("name", "n", "", "Transactional email name (required)")
 	transactionalCreateCmd.Flags().String("transactional-group-id", "", "Transactional group ID to assign this email to")

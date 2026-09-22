@@ -348,11 +348,34 @@ var campaignsGetCmd = &cobra.Command{
 			return err
 		}
 
+		if isWeb(cmd) {
+			return openResource(cmd, "campaign", args[0], c.URL)
+		}
+
 		if isJSONOutput() {
 			return printJSON(cmd.OutOrStdout(), c)
 		}
 
 		return printCampaign(cmd, c)
+	},
+}
+
+var campaignsViewCmd = &cobra.Command{
+	Use:   "view <id>",
+	Short: "Open a campaign in the Loops web app",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		c, err := runCampaignsGet(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		return openResource(cmd, "campaign", args[0], c.URL)
 	},
 }
 
@@ -377,7 +400,9 @@ func init() {
 	addPaginationFlags(campaignsListCmd)
 	addPickFlag(campaignsListCmd)
 	campaignsCmd.AddCommand(campaignsListCmd)
+	addWebFlag(campaignsGetCmd)
 	campaignsCmd.AddCommand(campaignsGetCmd)
+	campaignsCmd.AddCommand(campaignsViewCmd)
 
 	addCampaignFieldFlags(campaignsCreateCmd)
 	campaignsCreateCmd.MarkFlagRequired("name")

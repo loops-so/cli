@@ -107,11 +107,34 @@ var workflowsGetCmd = &cobra.Command{
 			return err
 		}
 
+		if isWeb(cmd) {
+			return openResource(cmd, "workflow", args[0], w.URL)
+		}
+
 		if isJSONOutput() {
 			return printJSON(cmd.OutOrStdout(), w)
 		}
 
 		return printSimplifiedWorkflow(cmd, w)
+	},
+}
+
+var workflowsViewCmd = &cobra.Command{
+	Use:   "view <id>",
+	Short: "Open a workflow in the Loops web app",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		w, err := runWorkflowsGet(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		return openResource(cmd, "workflow", args[0], w.URL)
 	},
 }
 
@@ -935,7 +958,9 @@ func init() {
 	addPaginationFlags(workflowsListCmd)
 	addPickFlag(workflowsListCmd)
 	workflowsCmd.AddCommand(workflowsListCmd)
+	addWebFlag(workflowsGetCmd)
 	workflowsCmd.AddCommand(workflowsGetCmd)
+	workflowsCmd.AddCommand(workflowsViewCmd)
 
 	workflowsCreateCmd.Flags().StringP("name", "n", "", "Workflow name")
 	workflowsCreateCmd.Flags().StringP("description", "d", "", "Workflow description")

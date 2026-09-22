@@ -24,6 +24,7 @@ func (o *outputFlag) Type() string   { return "format" }
 type Result struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
+	URL     string `json:"url,omitempty"`
 }
 
 func isJSONOutput() bool {
