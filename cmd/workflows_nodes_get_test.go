@@ -93,6 +93,40 @@ func TestRunWorkflowsNodeGet(t *testing.T) {
 		}
 	})
 
+	t.Run("decodes and renders audience filter appliesDownstream", func(t *testing.T) {
+		body := `{
+			"typeName": "AudienceFilter",
+			"id": "node_af",
+			"workflowId": "wf_123",
+			"nextNodeIds": ["node_next"],
+			"audienceSegmentId": "seg_1",
+			"appliesDownstream": true
+		}`
+		serveJSON(t, http.StatusOK, body)
+
+		n, err := runWorkflowsNodeGet(cfg(t), "wf_123", "node_af")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if n.AudienceFilter == nil {
+			t.Fatal("AudienceFilter = nil, want populated")
+		}
+		if !n.AudienceFilter.AppliesDownstream {
+			t.Error("AppliesDownstream = false, want true")
+		}
+
+		got := map[string]string{}
+		for _, r := range workflowNodeRows(&n.WorkflowNode) {
+			got[r[0]] = r[1]
+		}
+		if got["audienceSegmentId"] != "seg_1" {
+			t.Errorf("audienceSegmentId = %q, want seg_1", got["audienceSegmentId"])
+		}
+		if got["appliesDownstream"] != "true" {
+			t.Errorf("appliesDownstream = %q, want true", got["appliesDownstream"])
+		}
+	})
+
 	t.Run("returns error on non-200 response", func(t *testing.T) {
 		serveJSON(t, http.StatusNotFound, `{"success":false,"message":"Node not found"}`)
 		_, err := runWorkflowsNodeGet(cfg(t), "wf_123", "node_missing")

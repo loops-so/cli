@@ -307,6 +307,7 @@ func workflowNodeRows(n *loops.WorkflowNode) [][2]string {
 			addCommon(v.ID, v.WorkflowID, v.NextNodeIDs)
 			add("audienceSegmentId", v.AudienceSegmentID)
 			add("audienceFilter", formatAudienceFilter(v.AudienceFilter))
+			add("appliesDownstream", strconv.FormatBool(v.AppliesDownstream))
 		}
 	case loops.WorkflowNodeTypeTimerAction:
 		if v := n.TimerAction; v != nil {
