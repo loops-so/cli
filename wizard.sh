@@ -27,17 +27,27 @@
 #
 # Codex (app, CLI, or IDE extension), for a direct MCP connection:
 #   Use the latest Codex release, then run from a local terminal:
-#   codex mcp add loops --url https://mcp.loops.so
+#   codex mcp add loops --url https://mcp.loops.so/mcp
 #   Complete browser sign-in when prompted, or run: codex mcp login loops
 #
 # Claude Code, from a local terminal:
-#   claude mcp add --transport http --scope user loops https://mcp.loops.so
+#   claude mcp add --transport http --scope user loops https://mcp.loops.so/mcp
 #   Run /mcp inside Claude Code to sign in.
+#
+# Amp (web or desktop setup, also available in the CLI):
+#   https://ampcode.com/settings/mcp-servers
+#   Click Add MCP Server, enter https://mcp.loops.so/mcp, and click Connect.
+#   Complete the browser sign-in to Loops.
+#
+# OpenCode, from a local terminal:
+#   Use the latest OpenCode release, then run: opencode mcp add
+#   Choose a remote server named loops with URL https://mcp.loops.so/mcp.
+#   Sign in with: opencode mcp auth loops
 #
 # Cursor and other coding agents:
 #   Use the CLI and agent skills installed below.
 #
-# Supported MCP clients, versions, and setup (including Amp and OpenCode):
+# More MCP setup details:
 #   https://loops.so/docs/mcp-server
 #
 # Connector authentication must be completed in the user's app or browser.
