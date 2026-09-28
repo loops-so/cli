@@ -71,6 +71,10 @@ func runTransactionalGet(cfg *config.Config, id string) (*loops.Transactional, e
 	return newAPIClient(cfg).GetTransactional(id)
 }
 
+func runTransactionalMetrics(cfg *config.Config, id string) (*loops.TransactionalMetrics, error) {
+	return newAPIClient(cfg).GetTransactionalMetrics(id)
+}
+
 func runTransactionalCreate(cfg *config.Config, req loops.CreateTransactionalRequest) (*loops.TransactionalDraft, error) {
 	return newAPIClient(cfg).CreateTransactional(req)
 }
@@ -198,6 +202,30 @@ var transactionalViewCmd = &cobra.Command{
 		}
 
 		return openResource(cmd, "transactional email", args[0], tx.URL)
+	},
+}
+
+var transactionalMetricsCmd = &cobra.Command{
+	Use:   "metrics <id>",
+	Short: "Get all-time delivery metrics for a transactional email",
+	Long:  "Retrieves all-time delivery counters for a transactional email, totalled across every published version.",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		m, err := runTransactionalMetrics(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), m)
+		}
+
+		return printTransactionalMetrics(cmd, m)
 	},
 }
 
@@ -403,6 +431,7 @@ func init() {
 	addWebFlag(transactionalGetCmd)
 	transactionalCmd.AddCommand(transactionalGetCmd)
 	transactionalCmd.AddCommand(transactionalViewCmd)
+	transactionalCmd.AddCommand(transactionalMetricsCmd)
 
 	transactionalCreateCmd.Flags().StringP("name", "n", "", "Transactional email name (required)")
 	transactionalCreateCmd.Flags().String("transactional-group-id", "", "Transactional group ID to assign this email to")

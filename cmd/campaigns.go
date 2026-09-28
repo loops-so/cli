@@ -379,6 +379,35 @@ var campaignsViewCmd = &cobra.Command{
 	},
 }
 
+func runCampaignsMetrics(cfg *config.Config, id string) (*loops.EmailMetrics, error) {
+	return newAPIClient(cfg).GetCampaignMetrics(id)
+}
+
+var campaignsMetricsCmd = &cobra.Command{
+	Use:   "metrics <id>",
+	Short: "Get all-time engagement metrics for a campaign",
+	Long: "Retrieves all-time email engagement counters for a sent campaign.\n" +
+		"The API returns an error for a campaign that has not been sent yet.",
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		m, err := runCampaignsMetrics(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), m)
+		}
+
+		return printEmailMetrics(cmd, m)
+	},
+}
+
 func printCampaign(cmd *cobra.Command, c *loops.Campaign) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("campaignId", c.ID)
@@ -403,6 +432,7 @@ func init() {
 	addWebFlag(campaignsGetCmd)
 	campaignsCmd.AddCommand(campaignsGetCmd)
 	campaignsCmd.AddCommand(campaignsViewCmd)
+	campaignsCmd.AddCommand(campaignsMetricsCmd)
 
 	addCampaignFieldFlags(campaignsCreateCmd)
 	campaignsCreateCmd.MarkFlagRequired("name")
