@@ -37,6 +37,10 @@ func runWorkflowsNodeGet(cfg *config.Config, workflowID, nodeID string) (*loops.
 	return newAPIClient(cfg).GetWorkflowNode(workflowID, nodeID)
 }
 
+func runWorkflowsNodeMetrics(cfg *config.Config, workflowID, nodeID string) (*loops.EmailMetrics, error) {
+	return newAPIClient(cfg).GetWorkflowNodeMetrics(workflowID, nodeID)
+}
+
 var workflowsCmd = &cobra.Command{
 	Use:   "workflows",
 	Short: "Manage workflows",
@@ -196,6 +200,31 @@ var workflowsNodesGetCmd = &cobra.Command{
 		}
 
 		return printWorkflowNode(cmd, &n.WorkflowNode)
+	},
+}
+
+var workflowsNodesMetricsCmd = &cobra.Command{
+	Use:   "metrics <workflow-id> <node-id>",
+	Short: "Get all-time engagement metrics for a workflow email node",
+	Long: "Retrieves all-time email engagement counters for a SendEmailAction node.\n" +
+		"The API returns an error for nodes of any other type. A node that has not sent anything yet reports every counter as 0.",
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		m, err := runWorkflowsNodeMetrics(cfg, args[0], args[1])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), m)
+		}
+
+		return printEmailMetrics(cmd, m)
 	},
 }
 
@@ -987,6 +1016,7 @@ func init() {
 	workflowsCmd.AddCommand(workflowsChangeMailingListCmd)
 
 	workflowsNodesCmd.AddCommand(workflowsNodesGetCmd)
+	workflowsNodesCmd.AddCommand(workflowsNodesMetricsCmd)
 
 	workflowsNodesCreateCmd.Flags().String("node-type", "", fmt.Sprintf("Node type: %s", strings.Join(createWorkflowNodeTypes, ", ")))
 	workflowsNodesCreateCmd.Flags().String("insert-mode", "", "Insert mode: between, before, or after")
