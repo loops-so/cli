@@ -12,7 +12,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - shell: bash
         run: |
           INSTALL_DIR="$HOME/.loops-test"
@@ -30,7 +30,7 @@ jobs:
     name: install ps1 (windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - shell: pwsh
         run: |
           $InstallDir = "$env:TEMP\loops-test"
