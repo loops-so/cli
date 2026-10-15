@@ -2,6 +2,8 @@ name: vuln
 
 on:
   pull_request:
+  schedule:
+    - cron: "0 14 * * 1"
   workflow_dispatch:
 
 jobs:
