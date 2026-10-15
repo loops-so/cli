@@ -29,7 +29,7 @@ brew install loops-so/tap/loops
 curl -fsSL https://install.loops.so/cli | sh
 ```
 
-To install a specific version or to a custom path, append `-s -- <version> <path>` to `bash` in the command above. The default installation path is `~/.local/bin`.
+To install a specific version or to a custom path, append `-s -- <version> <path>` to `sh` in the command above. The default installation path is `~/.local/bin`.
 
 ### Script for Windows PowerShell
 
@@ -49,7 +49,7 @@ The CLI requires a Loops API key. Get one from [Settings > API](https://app.loop
 
 ### Keyring storage
 
-Store a key with `loops auth login --name <name>`. Run this again with a different name to store keys for multiple teams.
+Store a key with `loops auth login <name>`. Run this again with a different name to store keys for multiple teams.
 
 - `loops auth use <name>` — set a stored key as the default
 - `loops auth list` — list stored keys and see which is the default
@@ -63,6 +63,7 @@ When multiple keys are available, the CLI resolves them in this order:
 1. `LOOPS_API_KEY` env var
 1. `--team` flag
 1. The current default (set via `loops auth use`)
+1. The only stored key, when exactly one exists
 
 ## Environment variables
 
