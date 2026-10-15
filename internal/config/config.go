@@ -59,7 +59,7 @@ func Load(teamOverride string) (*Config, error) {
 	}
 
 	if cfg.APIKey == "" {
-		return nil, errors.New("no active team set — run `loops auth login --name <name>` to authenticate")
+		return nil, errors.New("no active team set — run `loops auth login <name>` to authenticate")
 	}
 
 	return cfg, nil
