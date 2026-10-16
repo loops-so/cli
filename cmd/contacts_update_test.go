@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -16,6 +17,24 @@ func TestRunContactsUpdate(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("sends source", func(t *testing.T) {
+		captured := serveJSONCapture(t, http.StatusOK, `{"success":true,"id":"cnt_abc123"}`)
+		err := runContactsUpdate(cfg(t), loops.UpdateContactRequest{
+			Email:  "bob@example.com",
+			Source: "cli",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		var body map[string]any
+		if err := json.Unmarshal(captured.Body, &body); err != nil {
+			t.Fatalf("invalid request body: %v", err)
+		}
+		if body["source"] != "cli" {
+			t.Errorf("body[\"source\"] = %v, want %q", body["source"], "cli")
 		}
 	})
 
