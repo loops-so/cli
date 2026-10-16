@@ -318,14 +318,14 @@ func init() {
 	contactsCmd.AddCommand(contactsFindCmd)
 
 	contactsCreateCmd.Flags().StringP("email", "e", "", "Contact email address")
-	contactsCreateCmd.Flags().String("source", "", "Source")
+	contactsCreateCmd.Flags().String("source", "", `Where the contact came from (replaces the default "API")`)
 	contactsCreateCmd.Flags().StringP("user-id", "u", "", "User ID")
 	addContactFieldFlags(contactsCreateCmd)
 	contactsCreateCmd.MarkFlagRequired("email")
 	contactsCmd.AddCommand(contactsCreateCmd)
 
 	contactsUpdateCmd.Flags().StringP("email", "e", "", "Contact email address")
-	contactsUpdateCmd.Flags().String("source", "", "Source")
+	contactsUpdateCmd.Flags().String("source", "", `Where the contact came from (replaces the default "API")`)
 	contactsUpdateCmd.Flags().StringP("user-id", "u", "", "User ID")
 	addContactFieldFlags(contactsUpdateCmd)
 	contactsUpdateCmd.MarkFlagsOneRequired("email", "user-id")
