@@ -12,8 +12,8 @@ func TestRunWorkflowsList(t *testing.T) {
 		body := `{
 			"pagination":{"nextCursor":""},
 			"data":[
-				{"id":"wf_1","name":"Welcome","createdAt":"2026-04-01","updatedAt":"2026-04-02"},
-				{"id":"wf_2","name":"Onboarding","createdAt":"2026-05-01","updatedAt":"2026-05-02"}
+				{"id":"wf_1","name":"Welcome","workflowGroupId":"wg_1","createdAt":"2026-04-01","updatedAt":"2026-04-02"},
+				{"id":"wf_2","name":"Onboarding","workflowGroupId":"wg_2","createdAt":"2026-05-01","updatedAt":"2026-05-02"}
 			]
 		}`
 		cap := serveJSONCapture(t, http.StatusOK, body)
@@ -27,6 +27,9 @@ func TestRunWorkflowsList(t *testing.T) {
 		}
 		if workflows[0].ID != "wf_1" {
 			t.Errorf("ID = %q, want wf_1", workflows[0].ID)
+		}
+		if workflows[0].WorkflowGroupID != "wg_1" {
+			t.Errorf("WorkflowGroupID = %q, want wg_1", workflows[0].WorkflowGroupID)
 		}
 		if workflows[1].Name != "Onboarding" {
 			t.Errorf("Name = %q, want Onboarding", workflows[1].Name)

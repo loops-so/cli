@@ -96,6 +96,7 @@ func TestRunWorkflowsUpdate(t *testing.T) {
 		"status": "Draft",
 		"workflowRevisionId": "rev_2",
 		"mailingListId": null,
+		"workflowGroupId": "wg_2",
 		"rootNodeId": null,
 		"nodes": {}
 	}`
@@ -134,11 +135,14 @@ func TestRunWorkflowsUpdate(t *testing.T) {
 
 	t.Run("sends workflowGroupId when set", func(t *testing.T) {
 		cap := serveJSONCapture(t, http.StatusOK, body)
-		_, err := runWorkflowsUpdate(cfg(t), "wf_1", loops.UpdateWorkflowPropertiesRequest{
+		w, err := runWorkflowsUpdate(cfg(t), "wf_1", loops.UpdateWorkflowPropertiesRequest{
 			WorkflowGroupID: "wg_2",
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		if w.WorkflowGroupID != "wg_2" {
+			t.Errorf("WorkflowGroupID = %q, want wg_2", w.WorkflowGroupID)
 		}
 		var sent map[string]any
 		if err := json.Unmarshal(cap.Body, &sent); err != nil {

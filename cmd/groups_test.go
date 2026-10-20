@@ -196,4 +196,11 @@ func TestRunWorkflowGroupsEndpoints(t *testing.T) {
 			t.Errorf("Path/Method = %q/%q", got.Path, got.Method)
 		}
 	})
+
+	t.Run("returns error on api failure", func(t *testing.T) {
+		serveJSON(t, http.StatusUnauthorized, `{"error":"unauthorized"}`)
+		if _, err := runWorkflowGroupsList(cfg(t), loops.PaginationParams{}); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }

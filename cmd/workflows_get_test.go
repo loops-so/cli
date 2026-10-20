@@ -14,6 +14,7 @@ func TestRunWorkflowsGet(t *testing.T) {
 		"description": "New user welcome series",
 		"emoji": "👋",
 		"mailingListId": null,
+		"workflowGroupId": "wg_1",
 		"rootNodeId": "node_root",
 		"nodes": {
 			"node_root": {
@@ -40,6 +41,9 @@ func TestRunWorkflowsGet(t *testing.T) {
 		}
 		if w.Name != "Welcome" {
 			t.Errorf("Name = %q, want Welcome", w.Name)
+		}
+		if w.WorkflowGroupID != "wg_1" {
+			t.Errorf("WorkflowGroupID = %q, want wg_1", w.WorkflowGroupID)
 		}
 		if w.MailingListID != nil {
 			t.Errorf("MailingListID = %v, want nil", w.MailingListID)

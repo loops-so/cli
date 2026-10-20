@@ -224,7 +224,7 @@ var campaignsListCmd = &cobra.Command{
 			return nil
 		}
 
-		headers := []string{"ID", "MESSAGE ID", "NAME", "STATUS", "SCHEDULING", "UPDATED"}
+		headers := []string{"ID", "MESSAGE ID", "NAME", "STATUS", "GROUP", "SCHEDULING", "UPDATED"}
 		rows := make([][]string, 0, len(campaigns))
 		for _, c := range campaigns {
 			rows = append(rows, []string{
@@ -232,6 +232,7 @@ var campaignsListCmd = &cobra.Command{
 				deref(c.EmailMessageID),
 				c.Name,
 				c.Status,
+				deref(c.CampaignGroupID),
 				formatCampaignScheduling(c.Scheduling),
 				c.UpdatedAt,
 			})
