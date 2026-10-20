@@ -9,9 +9,10 @@ import (
 )
 
 // groupCmdSet binds the four SDK methods that back a *Group resource
-// (campaign-groups or transactional-groups) to the labels used in CLI text.
-// Both group types share the same Group/CreateGroupRequest/UpdateGroupRequest
-// shapes, so the command tree is built once and dispatched twice.
+// (campaign-groups, transactional-groups, or workflow-groups) to the labels
+// used in CLI text. All group types share the same
+// Group/CreateGroupRequest/UpdateGroupRequest shapes, so the command tree is
+// built once and dispatched per resource.
 type groupCmdSet struct {
 	use       string // top-level command name, e.g. "campaign-groups"
 	idLabel   string // table label for the id, e.g. "campaignGroupId"
@@ -55,6 +56,22 @@ func runTransactionalGroupsCreate(cfg *config.Config, req loops.CreateGroupReque
 
 func runTransactionalGroupsUpdate(cfg *config.Config, id string, req loops.UpdateGroupRequest) (*loops.Group, error) {
 	return newAPIClient(cfg).UpdateTransactionalGroup(id, req)
+}
+
+func runWorkflowGroupsList(cfg *config.Config, params loops.PaginationParams) ([]loops.Group, error) {
+	return paginateGroups(params, newAPIClient(cfg).ListWorkflowGroups)
+}
+
+func runWorkflowGroupsGet(cfg *config.Config, id string) (*loops.Group, error) {
+	return newAPIClient(cfg).GetWorkflowGroup(id)
+}
+
+func runWorkflowGroupsCreate(cfg *config.Config, req loops.CreateGroupRequest) (*loops.Group, error) {
+	return newAPIClient(cfg).CreateWorkflowGroup(req)
+}
+
+func runWorkflowGroupsUpdate(cfg *config.Config, id string, req loops.UpdateGroupRequest) (*loops.Group, error) {
+	return newAPIClient(cfg).UpdateWorkflowGroup(id, req)
 }
 
 // paginateGroups runs single-page fetch when a cursor is set, otherwise walks
@@ -242,5 +259,15 @@ func init() {
 		runGet:    runTransactionalGroupsGet,
 		runCreate: runTransactionalGroupsCreate,
 		runUpdate: runTransactionalGroupsUpdate,
+	}))
+
+	rootCmd.AddCommand(newGroupsCmd(groupCmdSet{
+		use:       "workflow-groups",
+		idLabel:   "workflowGroupId",
+		singular:  "workflow group",
+		runList:   runWorkflowGroupsList,
+		runGet:    runWorkflowGroupsGet,
+		runCreate: runWorkflowGroupsCreate,
+		runUpdate: runWorkflowGroupsUpdate,
 	}))
 }

@@ -155,3 +155,45 @@ func TestRunTransactionalGroupsEndpoints(t *testing.T) {
 		}
 	})
 }
+
+func TestRunWorkflowGroupsEndpoints(t *testing.T) {
+	t.Run("list hits /workflow-groups", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[]}`)
+		if _, err := runWorkflowGroupsList(cfg(t), loops.PaginationParams{}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.Path != "/workflow-groups" {
+			t.Errorf("Path = %q", got.Path)
+		}
+	})
+
+	t.Run("get hits /workflow-groups/:id", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, sampleGroupBody)
+		if _, err := runWorkflowGroupsGet(cfg(t), "grp_abc"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.Path != "/workflow-groups/grp_abc" {
+			t.Errorf("Path = %q", got.Path)
+		}
+	})
+
+	t.Run("create hits /workflow-groups", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusCreated, sampleGroupBody)
+		if _, err := runWorkflowGroupsCreate(cfg(t), loops.CreateGroupRequest{Name: "Onboarding"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.Path != "/workflow-groups" || got.Method != http.MethodPost {
+			t.Errorf("Path/Method = %q/%q", got.Path, got.Method)
+		}
+	})
+
+	t.Run("update hits /workflow-groups/:id", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, sampleGroupBody)
+		if _, err := runWorkflowGroupsUpdate(cfg(t), "grp_abc", loops.UpdateGroupRequest{Name: "Renamed"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.Path != "/workflow-groups/grp_abc" || got.Method != http.MethodPost {
+			t.Errorf("Path/Method = %q/%q", got.Path, got.Method)
+		}
+	})
+}

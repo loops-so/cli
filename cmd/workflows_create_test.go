@@ -16,6 +16,7 @@ func TestRunWorkflowsCreate(t *testing.T) {
 		"status": "Draft",
 		"workflowRevisionId": "rev_1",
 		"mailingListId": "ml_1",
+		"workflowGroupId": "wg_1",
 		"rootNodeId": null,
 		"nodes": {}
 	}`
@@ -24,15 +25,19 @@ func TestRunWorkflowsCreate(t *testing.T) {
 		cap := serveJSONCapture(t, http.StatusOK, body)
 		ml := "ml_1"
 		w, err := runWorkflowsCreate(cfg(t), loops.CreateWorkflowRequest{
-			Name:          "Onboarding",
-			Description:   "New user series",
-			MailingListID: &ml,
+			Name:            "Onboarding",
+			Description:     "New user series",
+			MailingListID:   &ml,
+			WorkflowGroupID: "wg_1",
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if w.ID != "wf_new" {
 			t.Errorf("ID = %q, want wf_new", w.ID)
+		}
+		if w.WorkflowGroupID != "wg_1" {
+			t.Errorf("WorkflowGroupID = %q, want wg_1", w.WorkflowGroupID)
 		}
 
 		if cap.Method != http.MethodPost {
@@ -54,6 +59,24 @@ func TestRunWorkflowsCreate(t *testing.T) {
 		}
 		if sent["mailingListId"] != "ml_1" {
 			t.Errorf("mailingListId = %v, want ml_1", sent["mailingListId"])
+		}
+		if sent["workflowGroupId"] != "wg_1" {
+			t.Errorf("workflowGroupId = %v, want wg_1", sent["workflowGroupId"])
+		}
+	})
+
+	t.Run("omits workflowGroupId when empty", func(t *testing.T) {
+		cap := serveJSONCapture(t, http.StatusOK, body)
+		_, err := runWorkflowsCreate(cfg(t), loops.CreateWorkflowRequest{Name: "Onboarding"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		var sent map[string]any
+		if err := json.Unmarshal(cap.Body, &sent); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if _, ok := sent["workflowGroupId"]; ok {
+			t.Errorf("workflowGroupId should be omitted when empty, got %v", sent)
 		}
 	})
 
@@ -103,6 +126,29 @@ func TestRunWorkflowsUpdate(t *testing.T) {
 		}
 		if sent["name"] != "Renamed" {
 			t.Errorf("name = %v, want Renamed", sent["name"])
+		}
+		if _, ok := sent["workflowGroupId"]; ok {
+			t.Errorf("workflowGroupId should be omitted when empty, got %v", sent)
+		}
+	})
+
+	t.Run("sends workflowGroupId when set", func(t *testing.T) {
+		cap := serveJSONCapture(t, http.StatusOK, body)
+		_, err := runWorkflowsUpdate(cfg(t), "wf_1", loops.UpdateWorkflowPropertiesRequest{
+			WorkflowGroupID: "wg_2",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		var sent map[string]any
+		if err := json.Unmarshal(cap.Body, &sent); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if sent["workflowGroupId"] != "wg_2" {
+			t.Errorf("workflowGroupId = %v, want wg_2", sent["workflowGroupId"])
+		}
+		if _, ok := sent["name"]; ok {
+			t.Errorf("name should be omitted when empty, got %v", sent)
 		}
 	})
 
