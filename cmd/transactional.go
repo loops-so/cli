@@ -130,7 +130,7 @@ var transactionalListCmd = &cobra.Command{
 			return nil
 		}
 
-		headers := []string{"ID", "NAME", "DRAFT MSG", "PUBLISHED MSG", "UPDATED"}
+		headers := []string{"ID", "NAME", "DRAFT MSG", "PUBLISHED MSG", "GROUP", "UPDATED"}
 		rows := make([][]string, 0, len(emails))
 		for _, e := range emails {
 			rows = append(rows, []string{
@@ -138,6 +138,7 @@ var transactionalListCmd = &cobra.Command{
 				e.Name,
 				deref(e.DraftEmailMessageID),
 				deref(e.PublishedEmailMessageID),
+				deref(e.TransactionalGroupID),
 				e.UpdatedAt,
 			})
 		}

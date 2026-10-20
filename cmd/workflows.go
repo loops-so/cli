@@ -76,10 +76,10 @@ var workflowsListCmd = &cobra.Command{
 			return nil
 		}
 
-		headers := []string{"ID", "NAME", "CREATED", "UPDATED"}
+		headers := []string{"ID", "NAME", "GROUP", "CREATED", "UPDATED"}
 		rows := make([][]string, 0, len(workflows))
 		for _, w := range workflows {
-			rows = append(rows, []string{w.ID, w.Name, w.CreatedAt, w.UpdatedAt})
+			rows = append(rows, []string{w.ID, w.Name, w.WorkflowGroupID, w.CreatedAt, w.UpdatedAt})
 		}
 
 		if isPicking(cmd) {
@@ -152,6 +152,7 @@ func printSimplifiedWorkflow(cmd *cobra.Command, w *loops.SimplifiedWorkflow) er
 	t.Row("status", w.Status)
 	t.Row("workflowRevisionId", deref(w.WorkflowRevisionID))
 	t.Row("mailingListId", deref(w.MailingListID))
+	t.Row("workflowGroupId", w.WorkflowGroupID)
 	t.Row("rootNodeId", deref(w.RootNodeID))
 	if err := t.Render(); err != nil {
 		return err
@@ -584,6 +585,7 @@ var workflowsCreateCmd = &cobra.Command{
 
 		name, _ := cmd.Flags().GetString("name")
 		description, _ := cmd.Flags().GetString("description")
+		groupID, _ := cmd.Flags().GetString("workflow-group-id")
 
 		mailingListID, _, err := readNullableFlag(cmd, "mailing-list-id")
 		if err != nil {
@@ -591,9 +593,10 @@ var workflowsCreateCmd = &cobra.Command{
 		}
 
 		w, err := runWorkflowsCreate(cfg, loops.CreateWorkflowRequest{
-			Name:          name,
-			Description:   description,
-			MailingListID: mailingListID,
+			Name:            name,
+			Description:     description,
+			MailingListID:   mailingListID,
+			WorkflowGroupID: groupID,
 		})
 		if err != nil {
 			return err
@@ -610,7 +613,7 @@ var workflowsCreateCmd = &cobra.Command{
 
 var workflowsUpdateCmd = &cobra.Command{
 	Use:   "update <id>",
-	Short: "Update a workflow's name and/or description",
+	Short: "Update a workflow's name, description, and/or group",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := loadConfig()
@@ -620,11 +623,13 @@ var workflowsUpdateCmd = &cobra.Command{
 
 		name, _ := cmd.Flags().GetString("name")
 		description, _ := cmd.Flags().GetString("description")
+		groupID, _ := cmd.Flags().GetString("workflow-group-id")
 
 		w, err := runWorkflowsUpdate(cfg, args[0], loops.UpdateWorkflowPropertiesRequest{
 			ExpectedRevisionID: readExpectedRevisionID(cmd),
 			Name:               name,
 			Description:        description,
+			WorkflowGroupID:    groupID,
 		})
 		if err != nil {
 			return err
@@ -995,6 +1000,7 @@ func init() {
 	workflowsCreateCmd.Flags().StringP("name", "n", "", "Workflow name")
 	workflowsCreateCmd.Flags().StringP("description", "d", "", "Workflow description")
 	workflowsCreateCmd.Flags().String("mailing-list-id", "", `Mailing list ID. Pass "null" to clear.`)
+	workflowsCreateCmd.Flags().String("workflow-group-id", "", "Workflow group ID to create the workflow in (defaults to the Unsorted group)")
 	workflowsCreateCmd.MarkFlagRequired("name")
 	workflowsCmd.AddCommand(workflowsCreateCmd)
 
@@ -1004,8 +1010,9 @@ func init() {
 
 	workflowsUpdateCmd.Flags().StringP("name", "n", "", "Workflow name")
 	workflowsUpdateCmd.Flags().StringP("description", "d", "", "Workflow description")
+	workflowsUpdateCmd.Flags().String("workflow-group-id", "", "Move the workflow to this workflow group")
 	workflowsUpdateCmd.Flags().String("expected-revision-id", "", "Expected workflow revision ID (optimistic concurrency)")
-	workflowsUpdateCmd.MarkFlagsOneRequired("name", "description")
+	workflowsUpdateCmd.MarkFlagsOneRequired("name", "description", "workflow-group-id")
 	workflowsCmd.AddCommand(workflowsUpdateCmd)
 
 	workflowsChangeMailingListCmd.Flags().String("mailing-list-id", "", `Mailing list ID. Pass "null" to clear.`)
