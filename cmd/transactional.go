@@ -107,12 +107,17 @@ var transactionalListCmd = &cobra.Command{
 			return err
 		}
 
+		groupID, _ := cmd.Flags().GetString("transactional-group-id")
+
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		emails, err := runTransactionalList(cfg, loops.ListTransactionalsParams{PaginationParams: paginationParams(cmd)})
+		emails, err := runTransactionalList(cfg, loops.ListTransactionalsParams{
+			PaginationParams:     paginationParams(cmd),
+			TransactionalGroupID: groupID,
+		})
 		if err != nil {
 			return err
 		}
@@ -426,6 +431,7 @@ var transactionalSendCmd = &cobra.Command{
 func init() {
 	addPaginationFlags(transactionalListCmd)
 	addPickFlag(transactionalListCmd)
+	transactionalListCmd.Flags().String("transactional-group-id", "", "Only list transactional emails in this transactional group")
 	transactionalCmd.AddCommand(transactionalListCmd)
 
 	addWebFlag(transactionalGetCmd)

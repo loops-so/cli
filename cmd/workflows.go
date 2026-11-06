@@ -53,12 +53,17 @@ var workflowsListCmd = &cobra.Command{
 			return err
 		}
 
+		groupID, _ := cmd.Flags().GetString("workflow-group-id")
+
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		workflows, err := runWorkflowsList(cfg, loops.ListWorkflowsParams{PaginationParams: paginationParams(cmd)})
+		workflows, err := runWorkflowsList(cfg, loops.ListWorkflowsParams{
+			PaginationParams: paginationParams(cmd),
+			WorkflowGroupID:  groupID,
+		})
 		if err != nil {
 			return err
 		}
@@ -991,6 +996,7 @@ func mutationNodeID(n *loops.WorkflowMutationNode) string {
 func init() {
 	addPaginationFlags(workflowsListCmd)
 	addPickFlag(workflowsListCmd)
+	workflowsListCmd.Flags().String("workflow-group-id", "", "Only list workflows in this workflow group")
 	workflowsCmd.AddCommand(workflowsListCmd)
 	addWebFlag(workflowsGetCmd)
 	workflowsCmd.AddCommand(workflowsGetCmd)

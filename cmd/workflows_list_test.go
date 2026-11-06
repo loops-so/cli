@@ -58,6 +58,30 @@ func TestRunWorkflowsList(t *testing.T) {
 		}
 	})
 
+	t.Run("sends group filter", func(t *testing.T) {
+		cap := serveJSONCapture(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[]}`)
+		if _, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{WorkflowGroupID: "wg_1"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cap.Path != "/workflows?workflowGroupId=wg_1" {
+			t.Errorf("Path = %q, want /workflows?workflowGroupId=wg_1", cap.Path)
+		}
+	})
+
+	t.Run("sends group filter with cursor", func(t *testing.T) {
+		cap := serveJSONCapture(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[]}`)
+		_, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{
+			PaginationParams: loops.PaginationParams{Cursor: "abc"},
+			WorkflowGroupID:  "wg_1",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cap.Path != "/workflows?cursor=abc&workflowGroupId=wg_1" {
+			t.Errorf("Path = %q, want /workflows?cursor=abc&workflowGroupId=wg_1", cap.Path)
+		}
+	})
+
 	t.Run("returns error on api failure", func(t *testing.T) {
 		serveJSON(t, http.StatusUnauthorized, `{"error":"unauthorized"}`)
 		_, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{})
