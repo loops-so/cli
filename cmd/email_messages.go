@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2"
@@ -181,6 +182,29 @@ func parseStringPropertyMap(flag string, pairs []string) (map[string]string, err
 			return nil, fmt.Errorf("--%s %q: expected KEY=value", flag, pair)
 		}
 		m[pair[:idx]] = pair[idx+1:]
+	}
+	return m, nil
+}
+
+// parseStringDataVars parses --var and --json-vars like parseDataVars and
+// converts number and boolean values to strings.
+func parseStringDataVars(vars []string, jsonFile string) (map[string]string, error) {
+	raw, err := parseDataVars(vars, jsonFile)
+	if err != nil || raw == nil {
+		return nil, err
+	}
+	m := make(map[string]string, len(raw))
+	for k, v := range raw {
+		switch v := v.(type) {
+		case string:
+			m[k] = v
+		case float64:
+			m[k] = strconv.FormatFloat(v, 'f', -1, 64)
+		case bool:
+			m[k] = strconv.FormatBool(v)
+		default:
+			return nil, fmt.Errorf("data variable %q: value must be a string, number, or boolean", k)
+		}
 	}
 	return m, nil
 }
@@ -414,7 +438,7 @@ var emailMessagesPreviewCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		dataVars, err := parseDataVars(varPairs, jsonFile)
+		dataVars, err := parseStringDataVars(varPairs, jsonFile)
 		if err != nil {
 			return err
 		}

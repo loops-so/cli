@@ -22,7 +22,7 @@ func TestRunTransactionalList(t *testing.T) {
 			}]
 		}`
 		serveJSON(t, http.StatusOK, body)
-		emails, err := runTransactionalList(cfg(t), loops.PaginationParams{})
+		emails, err := runTransactionalList(cfg(t), loops.ListTransactionalsParams{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -46,7 +46,7 @@ func TestRunTransactionalList(t *testing.T) {
 
 	t.Run("returns error on api failure", func(t *testing.T) {
 		serveJSON(t, http.StatusUnauthorized, `{"error":"unauthorized"}`)
-		_, err := runTransactionalList(cfg(t), loops.PaginationParams{})
+		_, err := runTransactionalList(cfg(t), loops.ListTransactionalsParams{})
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

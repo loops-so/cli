@@ -175,17 +175,16 @@ func runCampaignsGet(cfg *config.Config, id string) (*loops.Campaign, error) {
 	return newAPIClient(cfg).GetCampaign(id)
 }
 
-func runCampaignsList(cfg *config.Config, params loops.PaginationParams) ([]loops.Campaign, error) {
+func runCampaignsList(cfg *config.Config, params loops.ListCampaignsParams) ([]loops.Campaign, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		campaigns, _, err := client.ListCampaigns(params)
 		return campaigns, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Campaign, *loops.Pagination, error) {
-		return client.ListCampaigns(loops.PaginationParams{
-			PerPage: params.PerPage,
-			Cursor:  cursor,
-		})
+		p := params
+		p.Cursor = cursor
+		return client.ListCampaigns(p)
 	})
 }
 
@@ -207,7 +206,7 @@ var campaignsListCmd = &cobra.Command{
 			return err
 		}
 
-		campaigns, err := runCampaignsList(cfg, paginationParams(cmd))
+		campaigns, err := runCampaignsList(cfg, loops.ListCampaignsParams{PaginationParams: paginationParams(cmd)})
 		if err != nil {
 			return err
 		}

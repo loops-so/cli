@@ -18,7 +18,7 @@ func TestRunWorkflowsList(t *testing.T) {
 		}`
 		cap := serveJSONCapture(t, http.StatusOK, body)
 
-		workflows, err := runWorkflowsList(cfg(t), loops.PaginationParams{PerPage: "10"})
+		workflows, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{PaginationParams: loops.PaginationParams{PerPage: "10"}})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -46,7 +46,7 @@ func TestRunWorkflowsList(t *testing.T) {
 		body := `{"pagination":{"nextCursor":"next"},"data":[{"id":"wf_1","name":"Welcome","createdAt":"","updatedAt":""}]}`
 		cap := serveJSONCapture(t, http.StatusOK, body)
 
-		workflows, err := runWorkflowsList(cfg(t), loops.PaginationParams{Cursor: "abc"})
+		workflows, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{PaginationParams: loops.PaginationParams{Cursor: "abc"}})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -60,7 +60,7 @@ func TestRunWorkflowsList(t *testing.T) {
 
 	t.Run("returns error on api failure", func(t *testing.T) {
 		serveJSON(t, http.StatusUnauthorized, `{"error":"unauthorized"}`)
-		_, err := runWorkflowsList(cfg(t), loops.PaginationParams{})
+		_, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{})
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

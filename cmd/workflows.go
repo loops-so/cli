@@ -15,17 +15,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func runWorkflowsList(cfg *config.Config, params loops.PaginationParams) ([]loops.WorkflowSummary, error) {
+func runWorkflowsList(cfg *config.Config, params loops.ListWorkflowsParams) ([]loops.WorkflowSummary, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		workflows, _, err := client.ListWorkflows(params)
 		return workflows, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.WorkflowSummary, *loops.Pagination, error) {
-		return client.ListWorkflows(loops.PaginationParams{
-			PerPage: params.PerPage,
-			Cursor:  cursor,
-		})
+		p := params
+		p.Cursor = cursor
+		return client.ListWorkflows(p)
 	})
 }
 
@@ -59,7 +58,7 @@ var workflowsListCmd = &cobra.Command{
 			return err
 		}
 
-		workflows, err := runWorkflowsList(cfg, paginationParams(cmd))
+		workflows, err := runWorkflowsList(cfg, loops.ListWorkflowsParams{PaginationParams: paginationParams(cmd)})
 		if err != nil {
 			return err
 		}

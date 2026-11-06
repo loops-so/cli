@@ -256,7 +256,7 @@ func TestRunEmailMessagesPreview(t *testing.T) {
 			Emails:            []string{"a@b.com", "c@d.com"},
 			ContactProperties: map[string]string{"firstName": "Pat"},
 			EventProperties:   map[string]string{"signupSource": "homepage"},
-			DataVariables:     map[string]any{"orderId": "123"},
+			DataVariables:     map[string]string{"orderId": "123"},
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -296,6 +296,52 @@ func TestRunEmailMessagesPreview(t *testing.T) {
 		})
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+	})
+}
+
+func TestParseStringDataVars(t *testing.T) {
+	writeVars := func(t *testing.T, contents string) string {
+		t.Helper()
+		path := filepath.Join(t.TempDir(), "vars.json")
+		if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+
+	t.Run("converts numbers and booleans to strings", func(t *testing.T) {
+		path := writeVars(t, `{"name":"Pat","count":42,"price":9.5,"vip":true}`)
+		m, err := parseStringDataVars([]string{"orderId=123"}, path)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := map[string]string{"name": "Pat", "count": "42", "price": "9.5", "vip": "true", "orderId": "123"}
+		if len(m) != len(want) {
+			t.Fatalf("len = %d, want %d", len(m), len(want))
+		}
+		for k, v := range want {
+			if m[k] != v {
+				t.Errorf("%s = %q, want %q", k, m[k], v)
+			}
+		}
+	})
+
+	t.Run("returns nil without input", func(t *testing.T) {
+		m, err := parseStringDataVars(nil, "")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if m != nil {
+			t.Errorf("m = %v, want nil", m)
+		}
+	})
+
+	t.Run("rejects nested values", func(t *testing.T) {
+		for _, body := range []string{`{"items":[1,2]}`, `{"user":{"id":1}}`, `{"x":null}`} {
+			if _, err := parseStringDataVars(nil, writeVars(t, body)); err == nil {
+				t.Errorf("%s: expected error, got nil", body)
+			}
 		}
 	})
 }

@@ -53,17 +53,16 @@ func attachmentFromPath(path string) (loops.Attachment, error) {
 	}, nil
 }
 
-func runTransactionalList(cfg *config.Config, params loops.PaginationParams) ([]loops.Transactional, error) {
+func runTransactionalList(cfg *config.Config, params loops.ListTransactionalsParams) ([]loops.Transactional, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		emails, _, err := client.ListTransactionals(params)
 		return emails, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pagination, error) {
-		return client.ListTransactionals(loops.PaginationParams{
-			PerPage: params.PerPage,
-			Cursor:  cursor,
-		})
+		p := params
+		p.Cursor = cursor
+		return client.ListTransactionals(p)
 	})
 }
 
@@ -113,7 +112,7 @@ var transactionalListCmd = &cobra.Command{
 			return err
 		}
 
-		emails, err := runTransactionalList(cfg, paginationParams(cmd))
+		emails, err := runTransactionalList(cfg, loops.ListTransactionalsParams{PaginationParams: paginationParams(cmd)})
 		if err != nil {
 			return err
 		}
