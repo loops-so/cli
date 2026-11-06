@@ -466,6 +466,60 @@ var emailMessagesPreviewCmd = &cobra.Command{
 	},
 }
 
+func runEmailMessagesRender(cfg *config.Config, id string, req loops.EmailMessageRenderRequest) (*loops.EmailMessageRenderResponse, error) {
+	return newAPIClient(cfg).RenderEmailMessage(id, req)
+}
+
+var emailMessagesRenderCmd = &cobra.Command{
+	Use:   "render <id>",
+	Short: "Render the HTML of an email message without sending it",
+	Long: "Renders the email message and writes its HTML to stdout.\n" +
+		"Variable fields accepted depend on the parent type:\n" +
+		"  - campaign renders accept --contact-prop\n" +
+		"  - workflow renders accept --contact-prop and --event-prop\n" +
+		"  - transactional renders accept --var / --json-vars",
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		contactPairs, _ := cmd.Flags().GetStringArray("contact-prop")
+		eventPairs, _ := cmd.Flags().GetStringArray("event-prop")
+		varPairs, _ := cmd.Flags().GetStringArray("var")
+		jsonFile, _ := cmd.Flags().GetString("json-vars")
+
+		contactProps, err := parseStringPropertyMap("contact-prop", contactPairs)
+		if err != nil {
+			return err
+		}
+		eventProps, err := parseStringPropertyMap("event-prop", eventPairs)
+		if err != nil {
+			return err
+		}
+		dataVars, err := parseStringDataVars(varPairs, jsonFile)
+		if err != nil {
+			return err
+		}
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		resp, err := runEmailMessagesRender(cfg, args[0], loops.EmailMessageRenderRequest{
+			ContactProperties: contactProps,
+			EventProperties:   eventProps,
+			DataVariables:     dataVars,
+		})
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), resp)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), resp.HTML)
+		return nil
+	},
+}
+
 func runEmailMessageGuardian(cfg *config.Config, id string) (*loops.EmailMessageGuardianResponse, error) {
 	return newAPIClient(cfg).GetEmailMessageGuardian(id)
 }
@@ -584,6 +638,12 @@ func init() {
 	emailMessagesPreviewCmd.Flags().StringArrayP("var", "v", nil, "Data variable as KEY=value (repeatable; transactional previews only)")
 	emailMessagesPreviewCmd.Flags().StringP("json-vars", "j", "", "Path to a JSON file of data variables")
 	emailMessagesCmd.AddCommand(emailMessagesPreviewCmd)
+
+	emailMessagesRenderCmd.Flags().StringArray("contact-prop", nil, "Contact property as KEY=value (repeatable)")
+	emailMessagesRenderCmd.Flags().StringArray("event-prop", nil, "Event property as KEY=value (repeatable)")
+	emailMessagesRenderCmd.Flags().StringArrayP("var", "v", nil, "Data variable as KEY=value (repeatable; transactional renders only)")
+	emailMessagesRenderCmd.Flags().StringP("json-vars", "j", "", "Path to a JSON file of data variables")
+	emailMessagesCmd.AddCommand(emailMessagesRenderCmd)
 
 	rootCmd.AddCommand(emailMessagesCmd)
 }
