@@ -22,7 +22,7 @@ func TestRunTransactionalList(t *testing.T) {
 			}]
 		}`
 		serveJSON(t, http.StatusOK, body)
-		emails, err := runTransactionalList(cfg(t), loops.PaginationParams{})
+		emails, err := runTransactionalList(cfg(t), loops.ListTransactionalsParams{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -44,9 +44,33 @@ func TestRunTransactionalList(t *testing.T) {
 		}
 	})
 
+	t.Run("sends group filter", func(t *testing.T) {
+		cap := serveJSONCapture(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[]}`)
+		if _, err := runTransactionalList(cfg(t), loops.ListTransactionalsParams{TransactionalGroupID: "tg_1"}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cap.Path != "/transactional-emails?transactionalGroupId=tg_1" {
+			t.Errorf("Path = %q, want /transactional-emails?transactionalGroupId=tg_1", cap.Path)
+		}
+	})
+
+	t.Run("sends group filter with cursor", func(t *testing.T) {
+		cap := serveJSONCapture(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[]}`)
+		_, err := runTransactionalList(cfg(t), loops.ListTransactionalsParams{
+			PaginationParams:     loops.PaginationParams{Cursor: "abc"},
+			TransactionalGroupID: "tg_1",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cap.Path != "/transactional-emails?cursor=abc&transactionalGroupId=tg_1" {
+			t.Errorf("Path = %q, want /transactional-emails?cursor=abc&transactionalGroupId=tg_1", cap.Path)
+		}
+	})
+
 	t.Run("returns error on api failure", func(t *testing.T) {
 		serveJSON(t, http.StatusUnauthorized, `{"error":"unauthorized"}`)
-		_, err := runTransactionalList(cfg(t), loops.PaginationParams{})
+		_, err := runTransactionalList(cfg(t), loops.ListTransactionalsParams{})
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

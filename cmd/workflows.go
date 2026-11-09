@@ -15,17 +15,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func runWorkflowsList(cfg *config.Config, params loops.PaginationParams) ([]loops.WorkflowSummary, error) {
+func runWorkflowsList(cfg *config.Config, params loops.ListWorkflowsParams) ([]loops.WorkflowSummary, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		workflows, _, err := client.ListWorkflows(params)
 		return workflows, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.WorkflowSummary, *loops.Pagination, error) {
-		return client.ListWorkflows(loops.PaginationParams{
-			PerPage: params.PerPage,
-			Cursor:  cursor,
-		})
+		p := params
+		p.Cursor = cursor
+		return client.ListWorkflows(p)
 	})
 }
 
@@ -54,12 +53,17 @@ var workflowsListCmd = &cobra.Command{
 			return err
 		}
 
+		groupID, _ := cmd.Flags().GetString("workflow-group-id")
+
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		workflows, err := runWorkflowsList(cfg, paginationParams(cmd))
+		workflows, err := runWorkflowsList(cfg, loops.ListWorkflowsParams{
+			PaginationParams: paginationParams(cmd),
+			WorkflowGroupID:  groupID,
+		})
 		if err != nil {
 			return err
 		}
@@ -992,6 +996,7 @@ func mutationNodeID(n *loops.WorkflowMutationNode) string {
 func init() {
 	addPaginationFlags(workflowsListCmd)
 	addPickFlag(workflowsListCmd)
+	workflowsListCmd.Flags().String("workflow-group-id", "", "Only list workflows in this workflow group")
 	workflowsCmd.AddCommand(workflowsListCmd)
 	addWebFlag(workflowsGetCmd)
 	workflowsCmd.AddCommand(workflowsGetCmd)
