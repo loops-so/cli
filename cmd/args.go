@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var requiredArgRe = regexp.MustCompile(`<(\w+)>`)
+var requiredArgRe = regexp.MustCompile(`<([\w-]+)>`)
 
 // match both required `<name>` and optional `[name]` positionals
 // - capture group 1 is the required name (empty if optional)
 // - capture group 2 is the optional name (empty if required)
-var positionalArgRe = regexp.MustCompile(`<(\w+)>|\[(\w+)\]`)
+var positionalArgRe = regexp.MustCompile(`<([\w-]+)>|\[([\w-]+)\]`)
 
 type Positional struct {
 	Name     string `json:"name"`

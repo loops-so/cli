@@ -57,6 +57,65 @@ func TestRunEmailMessagesUpdate(t *testing.T) {
 	})
 }
 
+func TestRunEmailMessagesUpdateFooterID(t *testing.T) {
+	body := `{"id": "em_abc123", "footerId": "ftr_1", "contentRevisionId": "rev_2"}`
+
+	decode := func(t *testing.T, raw []byte) map[string]any {
+		t.Helper()
+		var sent map[string]any
+		if err := json.Unmarshal(raw, &sent); err != nil {
+			t.Fatalf("decode request body: %v\nraw: %s", err, raw)
+		}
+		return sent
+	}
+
+	t.Run("sends footerId and returns it", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, body)
+		id := "ftr_1"
+		msg, err := runEmailMessagesUpdate(cfg(t), "em_abc123", loops.UpdateEmailMessageRequest{
+			EmailMessageFields: loops.EmailMessageFields{FooterID: &id},
+			Set:                map[string]bool{"footerId": true},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if sent := decode(t, got.Body); sent["footerId"] != "ftr_1" {
+			t.Errorf("footerId = %v, want ftr_1", sent["footerId"])
+		}
+		if deref(msg.FooterID) != "ftr_1" {
+			t.Errorf("FooterID = %q, want ftr_1", deref(msg.FooterID))
+		}
+	})
+
+	t.Run("sends JSON null for the system default footer", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, body)
+		_, err := runEmailMessagesUpdate(cfg(t), "em_abc123", loops.UpdateEmailMessageRequest{
+			Set: map[string]bool{"footerId": true},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		v, present := decode(t, got.Body)["footerId"]
+		if !present || v != nil {
+			t.Errorf("footerId = %v (present %v), want JSON null", v, present)
+		}
+	})
+
+	t.Run("omits footerId when not selected", func(t *testing.T) {
+		got := serveJSONCapture(t, http.StatusOK, body)
+		_, err := runEmailMessagesUpdate(cfg(t), "em_abc123", loops.UpdateEmailMessageRequest{
+			EmailMessageFields: loops.EmailMessageFields{Subject: "Updated"},
+			Set:                map[string]bool{"subject": true},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if _, present := decode(t, got.Body)["footerId"]; present {
+			t.Error("footerId should be omitted")
+		}
+	})
+}
+
 func TestFromEmailUsername(t *testing.T) {
 	tests := []struct {
 		in   string
@@ -164,6 +223,50 @@ func TestEmailMessageFieldParamsFromCmd(t *testing.T) {
 
 		if _, err := emailMessageFieldParamsFromCmd(cmd); err == nil {
 			t.Fatal("expected error for missing file, got nil")
+		}
+	})
+
+	t.Run("footer-id sets FooterID", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{"--footer-id", "ftr_1"})
+
+		params, err := emailMessageFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if deref(params.FooterID) != "ftr_1" {
+			t.Errorf("FooterID = %q, want ftr_1", deref(params.FooterID))
+		}
+		if !params.Set["footerId"] {
+			t.Error("expected footerId in Set")
+		}
+	})
+
+	t.Run("empty footer-id returns error", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{"--footer-id", ""})
+
+		if _, err := emailMessageFieldParamsFromCmd(cmd); err == nil {
+			t.Fatal("expected error for empty --footer-id, got nil")
+		}
+	})
+
+	t.Run("default-footer selects footerId with a nil FooterID", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		addEmailMessageFieldFlags(cmd)
+		cmd.ParseFlags([]string{"--default-footer"})
+
+		params, err := emailMessageFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if params.FooterID != nil {
+			t.Errorf("FooterID = %q, want nil", *params.FooterID)
+		}
+		if !params.Set["footerId"] {
+			t.Error("expected footerId in Set")
 		}
 	})
 

@@ -44,6 +44,7 @@ type emailMessageFieldParams struct {
 	ContactPropertiesFallbacks map[string]*string
 	EventPropertiesFallbacks   map[string]*string
 	DataVariablesFallbacks     map[string]*string
+	FooterID                   *string
 	Set                        map[string]bool
 }
 
@@ -62,7 +63,10 @@ func addEmailMessageFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().StringArray("contact-fallback", nil, "Contact property fallback as KEY=value (repeatable). Replaces all server-side contact fallbacks.")
 	cmd.Flags().StringArray("event-fallback", nil, "Event property fallback as KEY=value (repeatable). Replaces all server-side event fallbacks.")
 	cmd.Flags().StringArray("data-fallback", nil, "Transactional data-variable fallback as KEY=value (repeatable). Replaces all server-side data fallbacks.")
+	cmd.Flags().String("footer-id", "", "ID of a published footer (campaign and workflow emails only)")
+	cmd.Flags().Bool("default-footer", false, "Use the system default footer")
 	cmd.MarkFlagsMutuallyExclusive("lmx", "lmx-file")
+	cmd.MarkFlagsMutuallyExclusive("footer-id", "default-footer")
 }
 
 func emailMessageFieldParamsFromCmd(cmd *cobra.Command) (emailMessageFieldParams, error) {
@@ -148,6 +152,17 @@ func emailMessageFieldParamsFromCmd(cmd *cobra.Command) (emailMessageFieldParams
 		}
 		p.DataVariablesFallbacks = m
 		p.Set["dataVariablesFallbacks"] = true
+	}
+	if cmd.Flags().Changed("footer-id") {
+		v, _ := cmd.Flags().GetString("footer-id")
+		if v == "" {
+			return p, fmt.Errorf("--footer-id requires a value; use --default-footer to apply the system default footer")
+		}
+		p.FooterID = &v
+		p.Set["footerId"] = true
+	}
+	if v, _ := cmd.Flags().GetBool("default-footer"); v {
+		p.Set["footerId"] = true
 	}
 	return p, nil
 }
@@ -293,6 +308,7 @@ var emailMessagesUpdateCmd = &cobra.Command{
 				ContactPropertiesFallbacks: params.ContactPropertiesFallbacks,
 				EventPropertiesFallbacks:   params.EventPropertiesFallbacks,
 				DataVariablesFallbacks:     params.DataVariablesFallbacks,
+				FooterID:                   params.FooterID,
 			},
 			Set:                params.Set,
 			ExpectedRevisionID: revisionID,
@@ -347,6 +363,9 @@ func printEmailMessage(cmd *cobra.Command, msg *loops.EmailMessage) error {
 	}
 	if s := formatStringMap(msg.DataVariablesFallbacks); s != "" {
 		t.Row("dataVariablesFallbacks", s)
+	}
+	if msg.FooterID != nil {
+		t.Row("footerId", *msg.FooterID)
 	}
 	t.Row("contentRevisionId", deref(msg.ContentRevisionID))
 	t.Row("updatedAt", msg.UpdatedAt)
@@ -628,6 +647,7 @@ func init() {
 		"cc", "bcc", "language-code", "email-format",
 		"lmx", "lmx-file",
 		"contact-fallback", "event-fallback", "data-fallback",
+		"footer-id", "default-footer",
 	)
 	emailMessagesCmd.AddCommand(emailMessagesUpdateCmd)
 

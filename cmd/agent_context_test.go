@@ -216,6 +216,8 @@ func TestParsePositionals(t *testing.T) {
 		{"use [name]", []Positional{{Name: "name"}}},
 		{"thing <a> <b>", []Positional{{Name: "a", Required: true}, {Name: "b", Required: true}}},
 		{"mixed <id> [extra]", []Positional{{Name: "id", Required: true}, {Name: "extra"}}},
+		{"get <footer-id>", []Positional{{Name: "footer-id", Required: true}}},
+		{"get <workflow-id> [node-id]", []Positional{{Name: "workflow-id", Required: true}, {Name: "node-id"}}},
 		{"bare", nil},
 	}
 	for _, tc := range cases {
