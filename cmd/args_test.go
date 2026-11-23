@@ -107,6 +107,7 @@ func TestRequiredArgNames(t *testing.T) {
 		{"thing <a> <b>", []string{"a", "b"}},
 		{"use [name]", nil},
 		{"mixed <id> [extra]", []string{"id"}},
+		{"get <workflow-id> <node-id>", []string{"workflow-id", "node-id"}},
 		{"bare", nil},
 	}
 	for _, tc := range cases {
