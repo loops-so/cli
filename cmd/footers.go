@@ -429,7 +429,8 @@ func printFooter(cmd *cobra.Command, f *loops.FooterWithVariants) error {
 }
 
 // printFooterVariant renders a variant as a field table followed by its
-// highlighted draft LMX.
+// highlighted draft LMX. When the published LMX is different from the draft,
+// the two are rendered under "Draft:" and "Published:" headings.
 func printFooterVariant(cmd *cobra.Command, v *loops.FooterVariant) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("variantId", v.ID)
@@ -442,8 +443,19 @@ func printFooterVariant(cmd *cobra.Command, v *loops.FooterVariant) error {
 		return err
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout())
-	return renderLMX(cmd.OutOrStdout(), v.DraftLMX)
+	out := cmd.OutOrStdout()
+	fmt.Fprintln(out)
+	if v.PublishedLMX == nil || *v.PublishedLMX == v.DraftLMX {
+		return renderLMX(out, v.DraftLMX)
+	}
+
+	fmt.Fprintln(out, "Draft:")
+	if err := renderLMX(out, v.DraftLMX); err != nil {
+		return err
+	}
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Published:")
+	return renderLMX(out, *v.PublishedLMX)
 }
 
 func init() {

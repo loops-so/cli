@@ -438,3 +438,52 @@ func TestPrintFooter(t *testing.T) {
 		t.Errorf("draft LMX missing from output:\n%s", out.String())
 	}
 }
+
+func TestPrintFooterVariantContent(t *testing.T) {
+	render := func(t *testing.T, v loops.FooterVariant) string {
+		t.Helper()
+		var out strings.Builder
+		cmd := &cobra.Command{}
+		cmd.SetOut(&out)
+		if err := printFooterVariant(cmd, &v); err != nil {
+			t.Fatalf("printFooterVariant: %v", err)
+		}
+		return out.String()
+	}
+	const draft, published = "<Paragraph>new text</Paragraph>", "<Paragraph>old text</Paragraph>"
+
+	t.Run("shows only the draft when not published", func(t *testing.T) {
+		out := render(t, loops.FooterVariant{DraftLMX: draft})
+		if !strings.Contains(out, "new text") {
+			t.Errorf("draft LMX missing:\n%s", out)
+		}
+		if strings.Contains(out, "Draft:") || strings.Contains(out, "Published:") {
+			t.Errorf("unexpected headings:\n%s", out)
+		}
+	})
+
+	t.Run("shows one body when published is the same as the draft", func(t *testing.T) {
+		same := draft
+		out := render(t, loops.FooterVariant{DraftLMX: draft, PublishedLMX: &same})
+		if strings.Count(out, "new text") != 1 {
+			t.Errorf("want the LMX one time:\n%s", out)
+		}
+		if strings.Contains(out, "Draft:") || strings.Contains(out, "Published:") {
+			t.Errorf("unexpected headings:\n%s", out)
+		}
+	})
+
+	t.Run("shows draft then published when they are different", func(t *testing.T) {
+		pub := published
+		out := render(t, loops.FooterVariant{DraftLMX: draft, PublishedLMX: &pub})
+		order := []string{"Draft:", "new text", "Published:", "old text"}
+		pos := 0
+		for _, s := range order {
+			i := strings.Index(out[pos:], s)
+			if i < 0 {
+				t.Fatalf("%q missing or out of order:\n%s", s, out)
+			}
+			pos += i + len(s)
+		}
+	})
+}
