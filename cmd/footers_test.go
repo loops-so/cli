@@ -301,6 +301,19 @@ func TestRunFootersVariantGet(t *testing.T) {
 	})
 }
 
+func TestRunFootersVariantGetMultipleVariants(t *testing.T) {
+	serveJSON(t, http.StatusOK, `{"id":"ftr_1","name":"Main","variants":[{"id":"var_1"},{"id":"var_2"}]}`)
+	_, err := runFootersVariantGet(cfg(t), "ftr_1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	for _, id := range []string{"var_1", "var_2"} {
+		if !strings.Contains(err.Error(), id) {
+			t.Errorf("error does not name %s: %v", id, err)
+		}
+	}
+}
+
 func TestRunFootersVariantUpdate(t *testing.T) {
 	t.Run("sends lmx and expectedRevisionId", func(t *testing.T) {
 		got := serveJSONCapture(t, http.StatusOK, footerVariantBody)

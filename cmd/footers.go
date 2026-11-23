@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/loops-so/cli/internal/config"
 	"github.com/loops-so/loops-go"
@@ -45,16 +46,25 @@ func runFootersSetDefault(cfg *config.Config, id string, req loops.SetDefaultFoo
 
 // runFootersVariantGet returns the variant of the footer identified by
 // footerID. A footer has at most one variant, so the variant commands take the
-// footer ID only.
+// footer ID only. A footer with more than one variant is an error, because the
+// variant to use is then not known.
 func runFootersVariantGet(cfg *config.Config, footerID string) (*loops.FooterVariant, error) {
 	f, err := newAPIClient(cfg).GetFooter(footerID)
 	if err != nil {
 		return nil, err
 	}
-	if len(f.Variants) == 0 {
+	switch len(f.Variants) {
+	case 0:
 		return nil, fmt.Errorf("footer %s has no variant", footerID)
+	case 1:
+		return &f.Variants[0], nil
 	}
-	return &f.Variants[0], nil
+	ids := make([]string, len(f.Variants))
+	for i, v := range f.Variants {
+		ids[i] = v.ID
+	}
+	return nil, fmt.Errorf("footer %s has %d variants (%s); this version of the CLI supports one variant per footer",
+		footerID, len(ids), strings.Join(ids, ", "))
 }
 
 func runFootersVariantUpdate(cfg *config.Config, footerID, variantID string, req loops.UpdateFooterVariantRequest) (*loops.FooterVariant, error) {
