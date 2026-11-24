@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -10,15 +11,15 @@ import (
 )
 
 func runComponentsGet(cfg *config.Config, id string) (*loops.Component, error) {
-	return newAPIClient(cfg).GetComponent(id)
+	return newAPIClient(cfg).GetComponent(context.Background(), id)
 }
 
 func runComponentsCreate(cfg *config.Config, req loops.CreateComponentRequest) (*loops.Component, error) {
-	return newAPIClient(cfg).CreateComponent(req)
+	return newAPIClient(cfg).CreateComponent(context.Background(), req)
 }
 
 func runComponentsUpdate(cfg *config.Config, id string, req loops.UpdateComponentRequest) (*loops.UpdateComponentResult, error) {
-	return newAPIClient(cfg).UpdateComponent(id, req)
+	return newAPIClient(cfg).UpdateComponent(context.Background(), id, req)
 }
 
 // lmxFromCmd resolves the LMX body from either --lmx (inline) or --lmx-file
@@ -57,11 +58,11 @@ func printComponent(cmd *cobra.Command, c *loops.Component) error {
 func runComponentsList(cfg *config.Config, params loops.PaginationParams) ([]loops.Component, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		components, _, err := client.ListComponents(params)
+		components, _, err := client.ListComponents(context.Background(), params)
 		return components, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Component, *loops.Pagination, error) {
-		return client.ListComponents(loops.PaginationParams{
+		return client.ListComponents(context.Background(), loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})

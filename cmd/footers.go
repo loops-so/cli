@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,11 +14,11 @@ import (
 func runFootersList(cfg *config.Config, params loops.PaginationParams) ([]loops.Footer, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		footers, _, err := client.ListFooters(params)
+		footers, _, err := client.ListFooters(context.Background(), params)
 		return footers, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Footer, *loops.Pagination, error) {
-		return client.ListFooters(loops.PaginationParams{
+		return client.ListFooters(context.Background(), loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})
@@ -25,23 +26,23 @@ func runFootersList(cfg *config.Config, params loops.PaginationParams) ([]loops.
 }
 
 func runFootersGet(cfg *config.Config, id string) (*loops.FooterWithVariants, error) {
-	return newAPIClient(cfg).GetFooter(id)
+	return newAPIClient(cfg).GetFooter(context.Background(), id)
 }
 
 func runFootersCreate(cfg *config.Config, req loops.CreateFooterRequest) (*loops.FooterWithVariants, error) {
-	return newAPIClient(cfg).CreateFooter(req)
+	return newAPIClient(cfg).CreateFooter(context.Background(), req)
 }
 
 func runFootersUpdate(cfg *config.Config, id string, req loops.UpdateFooterRequest) (*loops.FooterWithVariants, error) {
-	return newAPIClient(cfg).UpdateFooter(id, req)
+	return newAPIClient(cfg).UpdateFooter(context.Background(), id, req)
 }
 
 func runFootersDelete(cfg *config.Config, id string) error {
-	return newAPIClient(cfg).DeleteFooter(id)
+	return newAPIClient(cfg).DeleteFooter(context.Background(), id)
 }
 
 func runFootersSetDefault(cfg *config.Config, id string, req loops.SetDefaultFooterRequest) (*loops.SetDefaultFooterResponse, error) {
-	return newAPIClient(cfg).SetDefaultFooter(id, req)
+	return newAPIClient(cfg).SetDefaultFooter(context.Background(), id, req)
 }
 
 // runFootersVariantGet returns the variant of the footer identified by
@@ -49,7 +50,7 @@ func runFootersSetDefault(cfg *config.Config, id string, req loops.SetDefaultFoo
 // footer ID only. A footer with more than one variant is an error, because the
 // variant to use is then not known.
 func runFootersVariantGet(cfg *config.Config, footerID string) (*loops.FooterVariant, error) {
-	f, err := newAPIClient(cfg).GetFooter(footerID)
+	f, err := newAPIClient(cfg).GetFooter(context.Background(), footerID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +69,11 @@ func runFootersVariantGet(cfg *config.Config, footerID string) (*loops.FooterVar
 }
 
 func runFootersVariantUpdate(cfg *config.Config, footerID, variantID string, req loops.UpdateFooterVariantRequest) (*loops.FooterVariant, error) {
-	return newAPIClient(cfg).UpdateFooterVariant(footerID, variantID, req)
+	return newAPIClient(cfg).UpdateFooterVariant(context.Background(), footerID, variantID, req)
 }
 
 func runFootersVariantPublish(cfg *config.Config, footerID, variantID string, req loops.PublishFooterVariantRequest) (*loops.FooterVariant, error) {
-	return newAPIClient(cfg).PublishFooterVariant(footerID, variantID, req)
+	return newAPIClient(cfg).PublishFooterVariant(context.Background(), footerID, variantID, req)
 }
 
 func addFooterVariantRevisionFlags(cmd *cobra.Command) {

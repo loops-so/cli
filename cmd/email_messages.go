@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -225,15 +226,15 @@ func parseStringDataVars(vars []string, jsonFile string) (map[string]string, err
 }
 
 func runEmailMessagesGet(cfg *config.Config, id string) (*loops.EmailMessage, error) {
-	return newAPIClient(cfg).GetEmailMessage(id)
+	return newAPIClient(cfg).GetEmailMessage(context.Background(), id)
 }
 
 func runEmailMessagesUpdate(cfg *config.Config, id string, req loops.UpdateEmailMessageRequest) (*loops.EmailMessage, error) {
-	return newAPIClient(cfg).UpdateEmailMessage(id, req)
+	return newAPIClient(cfg).UpdateEmailMessage(context.Background(), id, req)
 }
 
 func fetchLatestRevisionID(cfg *config.Config, id string) (string, error) {
-	msg, err := newAPIClient(cfg).GetEmailMessage(id)
+	msg, err := newAPIClient(cfg).GetEmailMessage(context.Background(), id)
 	if err != nil {
 		return "", fmt.Errorf("fetch current revision: %w", err)
 	}
@@ -430,7 +431,7 @@ func lmxChromaStyle() *chroma.Style {
 }
 
 func runEmailMessagesPreview(cfg *config.Config, id string, req loops.EmailMessagePreviewRequest) (*loops.EmailMessagePreviewResponse, error) {
-	return newAPIClient(cfg).PreviewEmailMessage(id, req)
+	return newAPIClient(cfg).PreviewEmailMessage(context.Background(), id, req)
 }
 
 var emailMessagesPreviewCmd = &cobra.Command{
@@ -486,7 +487,7 @@ var emailMessagesPreviewCmd = &cobra.Command{
 }
 
 func runEmailMessagesRender(cfg *config.Config, id string, req loops.EmailMessageRenderRequest) (*loops.EmailMessageRenderResponse, error) {
-	return newAPIClient(cfg).RenderEmailMessage(id, req)
+	return newAPIClient(cfg).RenderEmailMessage(context.Background(), id, req)
 }
 
 var emailMessagesRenderCmd = &cobra.Command{
@@ -540,7 +541,7 @@ var emailMessagesRenderCmd = &cobra.Command{
 }
 
 func runEmailMessageGuardian(cfg *config.Config, id string) (*loops.EmailMessageGuardianResponse, error) {
-	return newAPIClient(cfg).GetEmailMessageGuardian(id)
+	return newAPIClient(cfg).GetEmailMessageGuardian(context.Background(), id)
 }
 
 var emailMessagesGuardianCmd = &cobra.Command{

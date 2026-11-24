@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -56,42 +57,42 @@ func attachmentFromPath(path string) (loops.Attachment, error) {
 func runTransactionalList(cfg *config.Config, params loops.ListTransactionalsParams) ([]loops.Transactional, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		emails, _, err := client.ListTransactionals(params)
+		emails, _, err := client.ListTransactionals(context.Background(), params)
 		return emails, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pagination, error) {
 		p := params
 		p.Cursor = cursor
-		return client.ListTransactionals(p)
+		return client.ListTransactionals(context.Background(), p)
 	})
 }
 
 func runTransactionalGet(cfg *config.Config, id string) (*loops.Transactional, error) {
-	return newAPIClient(cfg).GetTransactional(id)
+	return newAPIClient(cfg).GetTransactional(context.Background(), id)
 }
 
 func runTransactionalMetrics(cfg *config.Config, id string) (*loops.TransactionalMetrics, error) {
-	return newAPIClient(cfg).GetTransactionalMetrics(id)
+	return newAPIClient(cfg).GetTransactionalMetrics(context.Background(), id)
 }
 
 func runTransactionalCreate(cfg *config.Config, req loops.CreateTransactionalRequest) (*loops.TransactionalDraft, error) {
-	return newAPIClient(cfg).CreateTransactional(req)
+	return newAPIClient(cfg).CreateTransactional(context.Background(), req)
 }
 
 func runTransactionalUpdate(cfg *config.Config, id string, req loops.UpdateTransactionalRequest) (*loops.Transactional, error) {
-	return newAPIClient(cfg).UpdateTransactional(id, req)
+	return newAPIClient(cfg).UpdateTransactional(context.Background(), id, req)
 }
 
 func runTransactionalDraft(cfg *config.Config, id string) (*loops.TransactionalDraft, error) {
-	return newAPIClient(cfg).EnsureTransactionalDraft(id)
+	return newAPIClient(cfg).EnsureTransactionalDraft(context.Background(), id)
 }
 
 func runTransactionalPublish(cfg *config.Config, id string) (*loops.Transactional, error) {
-	return newAPIClient(cfg).PublishTransactional(id)
+	return newAPIClient(cfg).PublishTransactional(context.Background(), id)
 }
 
 func runTransactionalSend(cfg *config.Config, req loops.SendTransactionalRequest) error {
-	return newAPIClient(cfg).SendTransactional(req)
+	return newAPIClient(cfg).SendTransactional(context.Background(), req)
 }
 
 var transactionalCmd = &cobra.Command{

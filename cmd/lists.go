@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/loops-so/cli/internal/config"
@@ -9,7 +10,7 @@ import (
 )
 
 func runListsList(cfg *config.Config) ([]loops.MailingList, error) {
-	return newAPIClient(cfg).ListMailingLists()
+	return newAPIClient(cfg).ListMailingLists(context.Background())
 }
 
 var listsCmd = &cobra.Command{

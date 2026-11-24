@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,26 +19,26 @@ import (
 func runWorkflowsList(cfg *config.Config, params loops.ListWorkflowsParams) ([]loops.WorkflowSummary, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		workflows, _, err := client.ListWorkflows(params)
+		workflows, _, err := client.ListWorkflows(context.Background(), params)
 		return workflows, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.WorkflowSummary, *loops.Pagination, error) {
 		p := params
 		p.Cursor = cursor
-		return client.ListWorkflows(p)
+		return client.ListWorkflows(context.Background(), p)
 	})
 }
 
 func runWorkflowsGet(cfg *config.Config, id string) (*loops.SimplifiedWorkflow, error) {
-	return newAPIClient(cfg).GetWorkflow(id)
+	return newAPIClient(cfg).GetWorkflow(context.Background(), id)
 }
 
 func runWorkflowsNodeGet(cfg *config.Config, workflowID, nodeID string) (*loops.WorkflowNodeWithRevision, error) {
-	return newAPIClient(cfg).GetWorkflowNode(workflowID, nodeID)
+	return newAPIClient(cfg).GetWorkflowNode(context.Background(), workflowID, nodeID)
 }
 
 func runWorkflowsNodeMetrics(cfg *config.Config, workflowID, nodeID string) (*loops.EmailMetrics, error) {
-	return newAPIClient(cfg).GetWorkflowNodeMetrics(workflowID, nodeID)
+	return newAPIClient(cfg).GetWorkflowNodeMetrics(context.Background(), workflowID, nodeID)
 }
 
 var workflowsCmd = &cobra.Command{
@@ -507,43 +508,43 @@ func parseUpdateWorkflowNodePayload(path string) (loops.UpdateWorkflowNodePayloa
 }
 
 func runWorkflowsCreate(cfg *config.Config, req loops.CreateWorkflowRequest) (*loops.SimplifiedWorkflow, error) {
-	return newAPIClient(cfg).CreateWorkflow(req)
+	return newAPIClient(cfg).CreateWorkflow(context.Background(), req)
 }
 
 func runWorkflowsUpdate(cfg *config.Config, id string, req loops.UpdateWorkflowPropertiesRequest) (*loops.SimplifiedWorkflow, error) {
-	return newAPIClient(cfg).UpdateWorkflow(id, req)
+	return newAPIClient(cfg).UpdateWorkflow(context.Background(), id, req)
 }
 
 func runWorkflowsChangeMailingList(cfg *config.Config, id string, req loops.ChangeWorkflowMailingListRequest) (*loops.ChangeWorkflowMailingListResponse, error) {
-	return newAPIClient(cfg).ChangeWorkflowMailingList(id, req)
+	return newAPIClient(cfg).ChangeWorkflowMailingList(context.Background(), id, req)
 }
 
 func runWorkflowsDelete(cfg *config.Config, id string, req loops.DeleteWorkflowRequest) error {
-	return newAPIClient(cfg).DeleteWorkflow(id, req)
+	return newAPIClient(cfg).DeleteWorkflow(context.Background(), id, req)
 }
 
 func runWorkflowsNodeCreate(cfg *config.Config, id string, req loops.CreateWorkflowNodeRequest) (*loops.CreateWorkflowNodeResponse, error) {
-	return newAPIClient(cfg).CreateWorkflowNode(id, req)
+	return newAPIClient(cfg).CreateWorkflowNode(context.Background(), id, req)
 }
 
 func runWorkflowsNodeUpdate(cfg *config.Config, workflowID, nodeID string, req loops.UpdateWorkflowNodeRequest) (*loops.UpdateWorkflowNodeResponse, error) {
-	return newAPIClient(cfg).UpdateWorkflowNode(workflowID, nodeID, req)
+	return newAPIClient(cfg).UpdateWorkflowNode(context.Background(), workflowID, nodeID, req)
 }
 
 func runWorkflowsNodeAddBranch(cfg *config.Config, workflowID, nodeID string, req loops.AddWorkflowBranchRequest) (*loops.AddWorkflowBranchResponse, error) {
-	return newAPIClient(cfg).AddWorkflowBranch(workflowID, nodeID, req)
+	return newAPIClient(cfg).AddWorkflowBranch(context.Background(), workflowID, nodeID, req)
 }
 
 func runWorkflowsNodeReroute(cfg *config.Config, workflowID, nodeID string, req loops.RerouteNodeConnectionRequest) (*loops.RerouteNodeConnectionResponse, error) {
-	return newAPIClient(cfg).RerouteNodeConnection(workflowID, nodeID, req)
+	return newAPIClient(cfg).RerouteNodeConnection(context.Background(), workflowID, nodeID, req)
 }
 
 func runWorkflowsNodeDelete(cfg *config.Config, workflowID, nodeID string, recursive bool, req loops.DeleteWorkflowNodeRequest) (*loops.DeleteWorkflowNodeResponse, error) {
 	client := newAPIClient(cfg)
 	if recursive {
-		return client.DeleteWorkflowNodeRecursive(workflowID, nodeID, req)
+		return client.DeleteWorkflowNodeRecursive(context.Background(), workflowID, nodeID, req)
 	}
-	return client.DeleteWorkflowNode(workflowID, nodeID, req)
+	return client.DeleteWorkflowNode(context.Background(), workflowID, nodeID, req)
 }
 
 func printChangeMailingListResponse(cmd *cobra.Command, r *loops.ChangeWorkflowMailingListResponse) error {

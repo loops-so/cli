@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -35,7 +36,7 @@ func parseMailingLists(pairs []string) (map[string]bool, error) {
 }
 
 func runEventsSend(cfg *config.Config, req loops.SendEventRequest) error {
-	return newAPIClient(cfg).SendEvent(req)
+	return newAPIClient(cfg).SendEvent(context.Background(), req)
 }
 
 var eventsCmd = &cobra.Command{

@@ -18,7 +18,7 @@ func TestRunWorkflowsList(t *testing.T) {
 		}`
 		cap := serveJSONCapture(t, http.StatusOK, body)
 
-		workflows, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{PaginationParams: loops.PaginationParams{PerPage: "10"}})
+		workflows, err := runWorkflowsList(cfg(t), loops.ListWorkflowsParams{PaginationParams: loops.PaginationParams{PerPage: 10}})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

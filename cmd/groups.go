@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/loops-so/cli/internal/config"
@@ -31,15 +32,15 @@ func runCampaignGroupsList(cfg *config.Config, params loops.PaginationParams) ([
 }
 
 func runCampaignGroupsGet(cfg *config.Config, id string) (*loops.Group, error) {
-	return newAPIClient(cfg).GetCampaignGroup(id)
+	return newAPIClient(cfg).GetCampaignGroup(context.Background(), id)
 }
 
 func runCampaignGroupsCreate(cfg *config.Config, req loops.CreateGroupRequest) (*loops.Group, error) {
-	return newAPIClient(cfg).CreateCampaignGroup(req)
+	return newAPIClient(cfg).CreateCampaignGroup(context.Background(), req)
 }
 
 func runCampaignGroupsUpdate(cfg *config.Config, id string, req loops.UpdateGroupRequest) (*loops.Group, error) {
-	return newAPIClient(cfg).UpdateCampaignGroup(id, req)
+	return newAPIClient(cfg).UpdateCampaignGroup(context.Background(), id, req)
 }
 
 func runTransactionalGroupsList(cfg *config.Config, params loops.PaginationParams) ([]loops.Group, error) {
@@ -47,15 +48,15 @@ func runTransactionalGroupsList(cfg *config.Config, params loops.PaginationParam
 }
 
 func runTransactionalGroupsGet(cfg *config.Config, id string) (*loops.Group, error) {
-	return newAPIClient(cfg).GetTransactionalGroup(id)
+	return newAPIClient(cfg).GetTransactionalGroup(context.Background(), id)
 }
 
 func runTransactionalGroupsCreate(cfg *config.Config, req loops.CreateGroupRequest) (*loops.Group, error) {
-	return newAPIClient(cfg).CreateTransactionalGroup(req)
+	return newAPIClient(cfg).CreateTransactionalGroup(context.Background(), req)
 }
 
 func runTransactionalGroupsUpdate(cfg *config.Config, id string, req loops.UpdateGroupRequest) (*loops.Group, error) {
-	return newAPIClient(cfg).UpdateTransactionalGroup(id, req)
+	return newAPIClient(cfg).UpdateTransactionalGroup(context.Background(), id, req)
 }
 
 func runWorkflowGroupsList(cfg *config.Config, params loops.PaginationParams) ([]loops.Group, error) {
@@ -63,26 +64,26 @@ func runWorkflowGroupsList(cfg *config.Config, params loops.PaginationParams) ([
 }
 
 func runWorkflowGroupsGet(cfg *config.Config, id string) (*loops.Group, error) {
-	return newAPIClient(cfg).GetWorkflowGroup(id)
+	return newAPIClient(cfg).GetWorkflowGroup(context.Background(), id)
 }
 
 func runWorkflowGroupsCreate(cfg *config.Config, req loops.CreateGroupRequest) (*loops.Group, error) {
-	return newAPIClient(cfg).CreateWorkflowGroup(req)
+	return newAPIClient(cfg).CreateWorkflowGroup(context.Background(), req)
 }
 
 func runWorkflowGroupsUpdate(cfg *config.Config, id string, req loops.UpdateGroupRequest) (*loops.Group, error) {
-	return newAPIClient(cfg).UpdateWorkflowGroup(id, req)
+	return newAPIClient(cfg).UpdateWorkflowGroup(context.Background(), id, req)
 }
 
 // paginateGroups runs single-page fetch when a cursor is set, otherwise walks
 // every page via loops.Paginate.
-func paginateGroups(params loops.PaginationParams, list func(loops.PaginationParams) ([]loops.Group, *loops.Pagination, error)) ([]loops.Group, error) {
+func paginateGroups(params loops.PaginationParams, list func(context.Context, loops.PaginationParams) ([]loops.Group, *loops.Pagination, error)) ([]loops.Group, error) {
 	if params.Cursor != "" {
-		groups, _, err := list(params)
+		groups, _, err := list(context.Background(), params)
 		return groups, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Group, *loops.Pagination, error) {
-		return list(loops.PaginationParams{PerPage: params.PerPage, Cursor: cursor})
+		return list(context.Background(), loops.PaginationParams{PerPage: params.PerPage, Cursor: cursor})
 	})
 }
 

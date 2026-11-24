@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -172,19 +173,19 @@ func campaignFieldParamsFromCmd(cmd *cobra.Command) (campaignFieldParams, error)
 }
 
 func runCampaignsGet(cfg *config.Config, id string) (*loops.Campaign, error) {
-	return newAPIClient(cfg).GetCampaign(id)
+	return newAPIClient(cfg).GetCampaign(context.Background(), id)
 }
 
 func runCampaignsList(cfg *config.Config, params loops.ListCampaignsParams) ([]loops.Campaign, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		campaigns, _, err := client.ListCampaigns(params)
+		campaigns, _, err := client.ListCampaigns(context.Background(), params)
 		return campaigns, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Campaign, *loops.Pagination, error) {
 		p := params
 		p.Cursor = cursor
-		return client.ListCampaigns(p)
+		return client.ListCampaigns(context.Background(), p)
 	})
 }
 
@@ -259,7 +260,7 @@ var campaignsListCmd = &cobra.Command{
 }
 
 func runCampaignsCreate(cfg *config.Config, req loops.CreateCampaignRequest) (*loops.CampaignCreateResponse, error) {
-	return newAPIClient(cfg).CreateCampaign(req)
+	return newAPIClient(cfg).CreateCampaign(context.Background(), req)
 }
 
 var campaignsCreateCmd = &cobra.Command{
@@ -298,7 +299,7 @@ var campaignsCreateCmd = &cobra.Command{
 }
 
 func runCampaignsUpdate(cfg *config.Config, id string, req loops.UpdateCampaignRequest) (*loops.Campaign, error) {
-	return newAPIClient(cfg).UpdateCampaign(id, req)
+	return newAPIClient(cfg).UpdateCampaign(context.Background(), id, req)
 }
 
 var campaignsUpdateCmd = &cobra.Command{
@@ -385,7 +386,7 @@ var campaignsViewCmd = &cobra.Command{
 }
 
 func runCampaignsMetrics(cfg *config.Config, id string) (*loops.EmailMetrics, error) {
-	return newAPIClient(cfg).GetCampaignMetrics(id)
+	return newAPIClient(cfg).GetCampaignMetrics(context.Background(), id)
 }
 
 var campaignsMetricsCmd = &cobra.Command{

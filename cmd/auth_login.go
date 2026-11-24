@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -65,7 +66,7 @@ func runAuthLogin(apiKey, name string, skipVerify bool) (*loops.APIKeyResponse, 
 		}
 		return nil, nil
 	}
-	result, err := newAPIClient(&config.Config{EndpointURL: config.EndpointURL(), APIKey: apiKey, Debug: debugFlag}).GetAPIKey()
+	result, err := newAPIClient(&config.Config{EndpointURL: config.EndpointURL(), APIKey: apiKey, Debug: debugFlag}).GetAPIKey(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("API key verification failed: %w", err)
 	}
