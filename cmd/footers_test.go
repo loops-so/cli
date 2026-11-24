@@ -58,7 +58,7 @@ func TestRunFootersList(t *testing.T) {
 
 	t.Run("fetches a single page when cursor is set", func(t *testing.T) {
 		got := serveJSONCapture(t, http.StatusOK, `{"pagination":{"nextCursor":"next"},"data":[]}`)
-		if _, err := runFootersList(cfg(t), loops.PaginationParams{Cursor: "cur_1", PerPage: "10"}); err != nil {
+		if _, err := runFootersList(cfg(t), loops.PaginationParams{Cursor: "cur_1", PerPage: 10}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if got.Path != "/footers?cursor=cur_1&perPage=10" {

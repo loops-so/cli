@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/loops-so/cli/internal/config"
@@ -9,7 +10,7 @@ import (
 )
 
 func runAPIKey(cfg *config.Config) (*loops.APIKeyResponse, error) {
-	return newAPIClient(cfg).GetAPIKey()
+	return newAPIClient(cfg).GetAPIKey(context.Background())
 }
 
 var apiKeyCmd = &cobra.Command{

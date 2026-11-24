@@ -18,7 +18,7 @@ func TestRunEventPatternsList(t *testing.T) {
 		}`
 		cap := serveJSONCapture(t, http.StatusOK, body)
 
-		patterns, err := runEventPatternsList(cfg(t), loops.PaginationParams{PerPage: "10"})
+		patterns, err := runEventPatternsList(cfg(t), loops.PaginationParams{PerPage: 10})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

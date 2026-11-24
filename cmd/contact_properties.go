@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/loops-so/cli/internal/config"
@@ -9,11 +10,11 @@ import (
 )
 
 func runContactPropertiesList(cfg *config.Config, customOnly bool) ([]loops.ContactProperty, error) {
-	return newAPIClient(cfg).ListContactProperties(customOnly)
+	return newAPIClient(cfg).ListContactProperties(context.Background(), loops.ListContactPropertiesParams{CustomOnly: customOnly})
 }
 
 func runContactPropertiesCreate(cfg *config.Config, name, propType string) error {
-	return newAPIClient(cfg).CreateContactProperty(name, propType)
+	return newAPIClient(cfg).CreateContactProperty(context.Background(), name, propType)
 }
 
 var contactPropertiesCmd = &cobra.Command{

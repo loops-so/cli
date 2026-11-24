@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -37,7 +38,7 @@ func runUploadsCreate(cfg *config.Config, path, contentType string) (*loops.Comp
 		}
 	}
 
-	return newAPIClient(cfg).Upload(loops.UploadRequest{
+	return newAPIClient(cfg).Upload(context.Background(), loops.UploadRequest{
 		ContentType:   contentType,
 		ContentLength: info.Size(),
 		Body:          f,

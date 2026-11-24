@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/loops-so/cli/internal/config"
@@ -16,7 +17,7 @@ var contactsSuppressionCmd = &cobra.Command{
 // check
 
 func runContactsSuppressionCheck(cfg *config.Config, email, userID string) (*loops.ContactSuppression, error) {
-	return newAPIClient(cfg).CheckContactSuppression(email, userID)
+	return newAPIClient(cfg).CheckContactSuppression(context.Background(), loops.ContactSuppressionParams{Email: email, UserID: userID})
 }
 
 var contactsSuppressionCheckCmd = &cobra.Command{
@@ -54,7 +55,7 @@ var contactsSuppressionCheckCmd = &cobra.Command{
 // remove
 
 func runContactsSuppressionRemove(cfg *config.Config, email, userID string) (*loops.ContactSuppressionRemoval, error) {
-	return newAPIClient(cfg).RemoveContactSuppression(email, userID)
+	return newAPIClient(cfg).RemoveContactSuppression(context.Background(), loops.ContactSuppressionParams{Email: email, UserID: userID})
 }
 
 var contactsSuppressionRemoveCmd = &cobra.Command{

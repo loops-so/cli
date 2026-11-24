@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/loops-so/cli/internal/config"
@@ -11,11 +12,11 @@ import (
 func runEventPatternsList(cfg *config.Config, params loops.PaginationParams) ([]loops.EventPatternSummary, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		patterns, _, err := client.ListEventPatterns(params)
+		patterns, _, err := client.ListEventPatterns(context.Background(), params)
 		return patterns, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.EventPatternSummary, *loops.Pagination, error) {
-		return client.ListEventPatterns(loops.PaginationParams{
+		return client.ListEventPatterns(context.Background(), loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})
@@ -25,9 +26,9 @@ func runEventPatternsList(cfg *config.Config, params loops.PaginationParams) ([]
 func runEventPatternsGet(cfg *config.Config, id, name string) (*loops.EventPattern, error) {
 	client := newAPIClient(cfg)
 	if name != "" {
-		return client.GetEventPatternByName(name)
+		return client.GetEventPatternByName(context.Background(), name)
 	}
-	return client.GetEventPattern(id)
+	return client.GetEventPattern(context.Background(), id)
 }
 
 var eventPatternsCmd = &cobra.Command{

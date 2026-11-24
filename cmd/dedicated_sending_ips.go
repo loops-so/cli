@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/loops-so/cli/internal/config"
@@ -8,7 +9,7 @@ import (
 )
 
 func runDedicatedSendingIPs(cfg *config.Config) ([]string, error) {
-	return newAPIClient(cfg).GetDedicatedSendingIPs()
+	return newAPIClient(cfg).GetDedicatedSendingIPs(context.Background())
 }
 
 var dedicatedSendingIPsCmd = &cobra.Command{

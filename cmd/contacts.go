@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
@@ -86,7 +87,7 @@ func contactFieldParamsFromCmd(cmd *cobra.Command) (contactFieldParams, error) {
 // find
 
 func runContactsFind(cfg *config.Config, email, userID string) ([]loops.Contact, error) {
-	return newAPIClient(cfg).FindContacts(loops.FindContactParams{
+	return newAPIClient(cfg).FindContacts(context.Background(), loops.FindContactParams{
 		Email:  email,
 		UserID: userID,
 	})
@@ -160,7 +161,7 @@ type contactCreateResult struct {
 }
 
 func runContactsCreate(cfg *config.Config, req loops.CreateContactRequest) (string, error) {
-	return newAPIClient(cfg).CreateContact(req)
+	return newAPIClient(cfg).CreateContact(context.Background(), req)
 }
 
 var contactsCreateCmd = &cobra.Command{
@@ -207,7 +208,7 @@ var contactsCreateCmd = &cobra.Command{
 // update
 
 func runContactsUpdate(cfg *config.Config, req loops.UpdateContactRequest) error {
-	return newAPIClient(cfg).UpdateContact(req)
+	return newAPIClient(cfg).UpdateContact(context.Background(), req)
 }
 
 var contactsUpdateCmd = &cobra.Command{
@@ -253,7 +254,7 @@ var contactsUpdateCmd = &cobra.Command{
 // delete
 
 func runContactsDelete(cfg *config.Config, email, userID string) error {
-	return newAPIClient(cfg).DeleteContact(email, userID)
+	return newAPIClient(cfg).DeleteContact(context.Background(), loops.DeleteContactRequest{Email: email, UserID: userID})
 }
 
 var contactsDeleteCmd = &cobra.Command{

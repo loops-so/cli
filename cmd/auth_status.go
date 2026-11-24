@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -48,7 +49,7 @@ func runAuthStatus() (*config.Config, *loops.APIKeyResponse, *config.PersistentC
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	keyResp, err := newAPIClient(cfg).GetAPIKey()
+	keyResp, err := newAPIClient(cfg).GetAPIKey(context.Background())
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("API key verification failed: %w", err)
 	}

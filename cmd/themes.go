@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -48,25 +49,25 @@ func themeFieldParamsFromCmd(cmd *cobra.Command) (themeFieldParams, error) {
 }
 
 func runThemesGet(cfg *config.Config, id string) (*loops.Theme, error) {
-	return newAPIClient(cfg).GetTheme(id)
+	return newAPIClient(cfg).GetTheme(context.Background(), id)
 }
 
 func runThemesCreate(cfg *config.Config, req loops.CreateThemeRequest) (*loops.Theme, error) {
-	return newAPIClient(cfg).CreateTheme(req)
+	return newAPIClient(cfg).CreateTheme(context.Background(), req)
 }
 
 func runThemesUpdate(cfg *config.Config, id string, req loops.UpdateThemeRequest) (*loops.Theme, error) {
-	return newAPIClient(cfg).UpdateTheme(id, req)
+	return newAPIClient(cfg).UpdateTheme(context.Background(), id, req)
 }
 
 func runThemesList(cfg *config.Config, params loops.PaginationParams) ([]loops.Theme, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		themes, _, err := client.ListThemes(params)
+		themes, _, err := client.ListThemes(context.Background(), params)
 		return themes, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.Theme, *loops.Pagination, error) {
-		return client.ListThemes(loops.PaginationParams{
+		return client.ListThemes(context.Background(), loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})

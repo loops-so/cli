@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,17 +22,17 @@ func formatSegmentFilter(f *loops.AudienceFilter) string {
 }
 
 func runAudienceSegmentsGet(cfg *config.Config, id string) (*loops.AudienceSegment, error) {
-	return newAPIClient(cfg).GetAudienceSegment(id)
+	return newAPIClient(cfg).GetAudienceSegment(context.Background(), id)
 }
 
 func runAudienceSegmentsList(cfg *config.Config, params loops.PaginationParams) ([]loops.AudienceSegment, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
-		segments, _, err := client.ListAudienceSegments(params)
+		segments, _, err := client.ListAudienceSegments(context.Background(), params)
 		return segments, err
 	}
 	return loops.Paginate(func(cursor string) ([]loops.AudienceSegment, *loops.Pagination, error) {
-		return client.ListAudienceSegments(loops.PaginationParams{
+		return client.ListAudienceSegments(context.Background(), loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})
@@ -133,7 +134,7 @@ func printAudienceSegment(cmd *cobra.Command, s *loops.AudienceSegment) error {
 }
 
 func runAudienceSegmentsCreate(cfg *config.Config, req loops.CreateAudienceSegmentRequest) (*loops.AudienceSegment, error) {
-	return newAPIClient(cfg).CreateAudienceSegment(req)
+	return newAPIClient(cfg).CreateAudienceSegment(context.Background(), req)
 }
 
 // filterFromCmd resolves the audience filter from either the inline --filter
